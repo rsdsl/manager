@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::net::{Ipv4Addr, Ipv6Addr};
 use std::sync::Mutex;
 
 use tauri::State;
@@ -32,6 +33,75 @@ struct WanCredentials {
 struct WanCredentialFile {
     username: String,
     password: String,
+}
+
+#[derive(Debug, Serialize)]
+struct ConnectionStatus {
+    session: String,
+    ipv4: String,
+    ipv6: String,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct ConnectionFile {
+    v4: Option<Ipv4Connection>,
+    v6: Option<Ipv6Connection>,
+}
+
+impl ConnectionFile {
+    fn session_summary(&self) -> String {
+        if self.v4.is_some() && self.v6.is_some() {
+            String::from("Einwahlstatus: ✅ Dual Stack")
+        } else if self.v6.is_some() {
+            String::from(
+                r#"Einwahlstatus: ✅ IPv6 | ggf. DS-Lite-Status unter "DHCPv6" überprüfen"#,
+            )
+        } else if self.v4.is_some() {
+            String::from(
+                r#"Einwahlstatus: ⚠ IPv4 | Eigene Server nicht von außen erreichbar, kleine Teile des modernen Internets nicht erreichbar. Internetanbieter um Freischaltung von IPv6 (bevorzugt "Dual Stack" bzw. mit öffentlicher IPv4-Adresse <i>und</i> IPv6, aber nicht zwingend nötig) bitten."#,
+            )
+        } else {
+            String::from("Einwahlstatus: ❌ Keine Einwahl | Router und Modem neu starten. Bei weiterem Bestehen Diagnoseprotokolle konsultieren oder Internetanbieter kontaktieren.")
+        }
+    }
+
+    fn ipv4_summary(&self) -> String {
+        if let Some(v4) = &self.v4 {
+            format!("IPv4: 🟢 Verbunden | Öffentliche Adresse: {}/32 | Primärer DNS-Server (nicht verwendet): {} | Sekundärer DNS-Server (nicht verwendet): {}",v4.addr,v4.dns1,v4.dns2)
+        } else if self.v6.is_some() {
+            String::from(
+                r#"IPv4: 🟡 Nicht verfügbar (ggf. DS-Lite-Status unter "DHCPv6" überprüfen)"#,
+            )
+        } else {
+            String::from("IPv4: 🔴 Nicht verbunden")
+        }
+    }
+
+    fn ipv6_summary(&self) -> String {
+        if let Some(v6) = &self.v6 {
+            format!(
+                "IPv6: 🟢 Verbunden | Verbindungslokale Adresse: {}/128 | Standardgateway: {}",
+                v6.laddr, v6.raddr
+            )
+        } else if self.v4.is_some() {
+            String::from("IPv6: 🟡 Nicht verfügbar | Bitte freischalten lassen (s. oben)")
+        } else {
+            String::from("IPv6: 🔴 Nicht verbunden")
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct Ipv4Connection {
+    addr: Ipv4Addr,
+    dns1: Ipv4Addr,
+    dns2: Ipv4Addr,
+}
+
+#[derive(Debug, Deserialize)]
+struct Ipv6Connection {
+    laddr: Ipv6Addr,
+    raddr: Ipv6Addr,
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -267,6 +337,90 @@ fn handle_kill_response(response: Response) -> String {
     }
 }
 
+#[tauri::command]
+async fn connection_status(state: State<'_, Mutex<Session>>) -> Result<ConnectionStatus, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(ConnectionStatus {
+                session: String::from("❗ Keine Instanz ausgewählt, bitte melden Sie sich neu an!"),
+                ipv4: String::from("❗ Keine Instanz ausgewählt, bitte melden Sie sich neu an!"),
+                ipv6: String::from("❗ Keine Instanz ausgewählt, bitte melden Sie sich neu an!"),
+            })
+        }
+    };
+
+    let response = client
+        .get(instance.url.join("/data/read").unwrap())
+        .query(&[("path", "/tmp/pppoe.ip_config")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_connection_status_response(response).await,
+        Err(e) => ConnectionStatus {
+            session: format!("❗ Abfrage fehlgeschlagen: {}", e),
+            ipv4: format!("❗ Abfrage fehlgeschlagen: {}", e),
+            ipv6: format!("❗ Abfrage fehlgeschlagen: {}", e),
+        },
+    })
+}
+
+async fn handle_connection_status_response(response: Response) -> ConnectionStatus {
+    let status = response.status();
+    if status.is_success() {
+        match response.json::<ConnectionFile>().await {
+            Ok(connection) => ConnectionStatus {
+                session: connection.session_summary(),
+                ipv4: connection.ipv4_summary(),
+                ipv6: connection.ipv6_summary(),
+            },
+            Err(e) => ConnectionStatus {
+                session: format!("❗ Fehlerhafte Parameterdatei. Fehler: {}", e),
+                ipv4: format!("❗ Fehlerhafte Parameterdatei. Fehler: {}", e),
+                ipv6: format!("❗ Fehlerhafte Parameterdatei. Fehler: {}", e),
+            },
+        }
+    } else if status == StatusCode::UNAUTHORIZED {
+        ConnectionStatus {
+            session: String::from(
+                "❗ Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!",
+            ),
+            ipv4: String::from("❗ Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!"),
+            ipv6: String::from("❗ Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!"),
+        }
+    } else if status == StatusCode::NOT_FOUND {
+        let connection = ConnectionFile::default();
+        ConnectionStatus {
+            session: connection.session_summary(),
+            ipv4: connection.ipv4_summary(),
+            ipv6: connection.ipv6_summary(),
+        }
+    } else if status.is_client_error() {
+        ConnectionStatus {
+            session: format!("❗ Clientseitiger Fehler: {}", status),
+            ipv4: format!("❗ Clientseitiger Fehler: {}", status),
+            ipv6: format!("❗ Clientseitiger Fehler: {}", status),
+        }
+    } else if status.is_server_error() {
+        ConnectionStatus {
+            session: format!("❗ Serverseitiger Fehler: {}", status),
+            ipv4: format!("❗ Serverseitiger Fehler: {}", status),
+            ipv6: format!("❗ Serverseitiger Fehler: {}", status),
+        }
+    } else {
+        ConnectionStatus {
+            session: format!("❗ Unerwarteter Statuscode: {}", status),
+            ipv4: format!("❗ Unerwarteter Statuscode: {}", status),
+            ipv6: format!("❗ Unerwarteter Statuscode: {}", status),
+        }
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(Mutex::new(Session {
@@ -281,7 +435,8 @@ fn main() {
             disconnect,
             load_wan_credentials,
             change_wan_credentials,
-            kill
+            kill,
+            connection_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

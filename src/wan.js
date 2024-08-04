@@ -1,10 +1,22 @@
 const { invoke } = window.__TAURI__.tauri;
 const { ask, message } = window.__TAURI__.dialog;
 
+let connectionStatusEl;
+let connectionIpv4El;
+let connectionIpv6El;
+
 let credentialsUsernameEl;
 let credentialsPasswordEl;
 let credentialsSubmitEl;
 let credentialsStatusEl;
+
+async function refreshConnectionStatus() {
+  const connectionStatus = await invoke("connection_status", {});
+
+  connectionStatusEl.innerText = connectionStatus.session;
+  connectionIpv4El.innerText = connectionStatus.ipv4;
+  connectionIpv6El.innerText = connectionStatus.ipv6;
+}
 
 async function warmReconnect() {
   const error = await invoke("kill", { process: "rsdsl_pppoe3", signal: "hup" });
@@ -93,6 +105,12 @@ async function changeCredentials() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  refreshConnectionStatus();
+
+  connectionStatusEl = document.querySelector("#connection-status");
+  connectionIpv4El = document.querySelector("#connection-ipv4");
+  connectionIpv6El = document.querySelector("#connection-ipv6");
+
   document.querySelector("#connection-warm-reconnect").addEventListener("click", (e) => {
     e.preventDefault();
     warmReconnect();
@@ -123,3 +141,5 @@ window.addEventListener("DOMContentLoaded", () => {
 
   loadCredentials();
 });
+
+setInterval(refreshConnectionStatus, 3000);
