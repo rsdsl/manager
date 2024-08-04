@@ -221,6 +221,52 @@ fn handle_change_wan_credentials_response(response: Response) -> String {
     }
 }
 
+#[tauri::command]
+async fn kill(
+    process: String,
+    signal: String,
+    state: State<'_, Mutex<Session>>,
+) -> Result<String, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(String::from(
+                "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            ))
+        }
+    };
+
+    let response = client
+        .post(instance.url.join("/proc/kill").unwrap())
+        .query(&[("process", process), ("signal", signal)])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_kill_response(response),
+        Err(e) => format!("Signalversand an Dienst fehlgeschlagen: {}", e),
+    })
+}
+
+fn handle_kill_response(response: Response) -> String {
+    let status = response.status();
+    if status.is_success() {
+        String::new()
+    } else if status == StatusCode::UNAUTHORIZED {
+        String::from("Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!")
+    } else if status.is_client_error() {
+        format!("Clientseitiger Fehler: {}", status)
+    } else if status.is_server_error() {
+        format!("Serverseitiger Fehler: {}", status)
+    } else {
+        format!("Unerwarteter Statuscode: {}", status)
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(Mutex::new(Session {
@@ -234,7 +280,8 @@ fn main() {
             connect,
             disconnect,
             load_wan_credentials,
-            change_wan_credentials
+            change_wan_credentials,
+            kill
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

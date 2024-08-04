@@ -1,10 +1,43 @@
 const { invoke } = window.__TAURI__.tauri;
-const { ask } = window.__TAURI__.dialog;
+const { ask, message } = window.__TAURI__.dialog;
 
 let credentialsUsernameEl;
 let credentialsPasswordEl;
 let credentialsSubmitEl;
 let credentialsStatusEl;
+
+async function warmReconnect() {
+  const error = await invoke("kill", { process: "rsdsl_pppoe3", signal: "hup" });
+
+  if (error !== "") {
+    await message("Befehl konnte nicht erteilt werden: " + error, {
+      kind: "error",
+      title: "Neusynchronisation nicht erfolgt"
+    });
+  }
+}
+
+async function coldReconnect() {
+  const error = await invoke("kill", { process: "rsdsl_pppoe3", signal: "term" });
+
+  if (error !== "") {
+    await message("Befehl konnte nicht erteilt werden: " + error, {
+      kind: "error",
+      title: "Neueinwahl nicht erfolgt"
+    });
+  }
+}
+
+async function forceReconnect() {
+  const error = await invoke("kill", { process: "rsdsl_pppoe3", signal: "kill" });
+
+  if (error !== "") {
+    await message("Befehl konnte nicht erteilt werden: " + error, {
+      kind: "error",
+      title: "Neueinwahl nicht erfolgt"
+    });
+  }
+}
 
 function showCredentials() {
   switch (credentialsPasswordEl.type) {
@@ -50,16 +83,29 @@ async function changeCredentials() {
   document.body.style.cursor = "default";
 
   const reconnect = await ask("Zum Übernehmen der neuen Zugangsdaten muss die Einwahl zum Internetanbieter neu aufgebaut werden. Dies dauert ca. 30 Sekunden. Möchten Sie die Einwahl jetzt neu herstellen?", {
-    kind: "warning",
-    title: "Neueinwahl erforderlich",
+    kind: "info",
+    title: "Neueinwahl erforderlich"
   });
 
   if (reconnect) {
-    await wanColdReconnect();
+    await coldReconnect();
   }
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  document.querySelector("#connection-warm-reconnect").addEventListener("click", (e) => {
+    e.preventDefault();
+    warmReconnect();
+  });
+  document.querySelector("#connection-cold-reconnect").addEventListener("click", (e) => {
+    e.preventDefault();
+    coldReconnect();
+  });
+  document.querySelector("#connection-force-reconnect").addEventListener("click", (e) => {
+    e.preventDefault();
+    forceReconnect();
+  });
+
   credentialsUsernameEl = document.querySelector("#credentials-username");
   credentialsPasswordEl = document.querySelector("#credentials-password");
   credentialsSubmitEl = document.querySelector("#credentials-submit");

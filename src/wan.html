@@ -45,6 +45,42 @@
 
       <br />
 
+      <form id="connection-form">
+        <fieldset>
+          <legend>Einwahl</legend>
+
+          <div class="row">
+            <button id="connection-warm-reconnect">Verbindungsparameter neu synchronisieren</button>
+            <button id="connection-cold-reconnect">Neu einwählen</button>
+            <button id="connection-force-reconnect">Neueinwahl erzwingen</button>
+          </div>
+
+          <p>Information: Eine Neueinwahl dauert ca. 30 Sekunden und übernimmt
+          Änderungen an den Zugangsdaten. Während diesem Zeitraum besteht keine
+          Verbindung zum Internetanbieter. Eine Neusynchronisation der
+          Verbindungsparameter dauert meist ca. 3 Sekunden oder weniger,
+          übernimmt aber keine Änderungen an den Zugangsdaten und kann bei der
+          Umstellung zwischen dynamischer und statischer Adressierung oder
+          zwischen IPv4 und IPv6 hilfreich sein. Beide Vorgänge führen in der
+          Regel zu einem Wechsel der öffentlichen IPv4-Adresse (ggf.  mehrmals
+          wiederholen) und in selteneren Fällen auch zu einem Wechsel des
+          IPv6-Präfixes, falls die Einwahl erst nach über eine Stunde
+          erfolgreich ist.</p>
+
+          <p>In einigen Fällen kann die Software einfrieren, insbesondere nach
+          schnell aufeinander folgenden Verbindungsabbrüchen durch äußere
+          Einflüsse. Meist genügt es, nur den Einwahldienst anstelle des ganzen
+          Gerätes neu zu starten. Die Auswirkungen sind die gleichen wie bei
+          einer Neueinwahl, allerdings wird nicht auf das Beenden der aktuellen
+          Einwahl gewartet und ein Neustart des Einwahldienstes erzwungen. Wird
+          diese Operation bei funktionierender Internetverbindung genutzt, kann
+          es über 1 Minute dauern, bis der Anbieter die Einwahl wieder zulässt.
+          Das gleiche gilt für Neustarts mittels Stromkabel.</p>
+        </fieldset>
+      </form>
+
+      <br />
+
       <form id="credentials-form">
         <fieldset>
           <legend>PPPoE-Zugangsdaten</legend>
@@ -62,7 +98,7 @@
           </div>
           <br />
           <div class="row">
-            <button id="credentials-show" type="default">🔒Passwort ein-/ausblenden</button>
+            <button id="credentials-show">🔒Passwort ein-/ausblenden</button>
           </div>
 
           <br />

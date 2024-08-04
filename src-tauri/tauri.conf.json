@@ -17,7 +17,8 @@
       },
 	  "dialog": {
 	  	"all": false,
-		"ask": true
+		"ask": true,
+		"message": true
 	  }
     },
     "windows": [
