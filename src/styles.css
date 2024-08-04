@@ -74,7 +74,7 @@ button {
   cursor: pointer;
 }
 
-button:hover {
+button:hover:enabled {
   border-color: #396cd8;
 }
 button:active {
@@ -82,13 +82,18 @@ button:active {
   background-color: #e8e8e8;
 }
 
+:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 input,
 button {
   outline: none;
 }
 
-#greet-input {
-  margin-right: 5px;
+input {
+  width: 30em;
 }
 
 @media (prefers-color-scheme: dark) {
