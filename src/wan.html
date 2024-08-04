@@ -4,17 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Übersicht - RSDSL Verwaltungswerkzeug</title>
+    <title>Einwahl und Zugangsdaten - RSDSL Verwaltungswerkzeug</title>
     <script type="module" src="/dashboard.js" defer></script>
+    <script type="module" src="/wan.js" defer></script>
   </head>
 
   <body>
     <div class="container">
-      <h1>Übersicht</h1>
+      <h1>Einwahl und Zugangsdaten</h1>
 
       <div class="row">
         <form id="dashboard-form">
-          <!-- <button id="dashboard-submit" type="submit">Zurück zur Übersicht</button> -->
+          <button id="dashboard-submit" type="submit">Zurück zur Übersicht</button>
         </form>
 
         <form id="wan-open-form">
@@ -41,6 +42,38 @@
           <button id="disconnect-submit" type="submit">Abmelden</button>
         </form>
       </div>
+
+      <br />
+
+      <form id="credentials-form">
+        <fieldset>
+          <legend>PPPoE-Zugangsdaten</legend>
+
+          <label for="credentials-username" form="credentials-form">Benutzername:</label>
+          <div class="row">
+            <input id="credentials-username" />
+          </div>
+
+          <br />
+
+          <label for="credentials-password" form="credentials-form">Passwort:</label>
+          <div class="row">
+            <input id="credentials-password" type="password" />
+          </div>
+          <br />
+          <div class="row">
+            <button id="credentials-show" type="default">🔒Passwort ein-/ausblenden</button>
+          </div>
+
+          <br />
+
+          <div class="row">
+            <button id="credentials-submit" type="submit">Zugangsdaten ändern</button>
+          </div>
+
+          <p id="credentials-status">Warte auf Initialisierung...</p>
+        </fieldset>
+      </form>
     </div>
   </body>
 </html>

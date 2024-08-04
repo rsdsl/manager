@@ -72,6 +72,8 @@ button {
 
 button {
   cursor: pointer;
+  margin-left: 1em;
+  margin-right: 1em;
 }
 
 button:hover:enabled {
