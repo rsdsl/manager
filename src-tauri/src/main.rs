@@ -1,11 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::net::{Ipv4Addr, Ipv6Addr};
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6};
 use std::sync::Mutex;
+use std::time::{Duration, SystemTime};
 
 use tauri::State;
 
+use chrono::{DateTime, Local};
 use reqwest::{Client, Response};
 use reqwest::{StatusCode, Url};
 use serde::{Deserialize, Serialize};
@@ -102,6 +104,170 @@ struct Ipv4Connection {
 struct Ipv6Connection {
     laddr: Ipv6Addr,
     raddr: Ipv6Addr,
+}
+
+#[derive(Debug, Serialize)]
+struct Dhcpv6Status {
+    timestamp: String,
+    srvaddr: String,
+    srvid: String,
+    t1: String,
+    t2: String,
+    prefix: String,
+    wanaddr: String,
+    preflft: String,
+    validlft: String,
+    dns1: String,
+    dns2: String,
+    aftr: String,
+}
+
+impl Dhcpv6Status {
+    fn no_lease() -> Self {
+        Self::with_all(String::from(
+            "✖ Keine Lease vorhanden (erster Systemstart oder Stromausfall?)",
+        ))
+    }
+
+    fn with_all(message: String) -> Self {
+        Self {
+            timestamp: message.clone(),
+            srvaddr: message.clone(),
+            srvid: message.clone(),
+            t1: message.clone(),
+            t2: message.clone(),
+            prefix: message.clone(),
+            wanaddr: message.clone(),
+            preflft: message.clone(),
+            validlft: message.clone(),
+            dns1: message.clone(),
+            dns2: message.clone(),
+            aftr: message,
+        }
+    }
+}
+
+impl From<Dhcpv6Lease> for Dhcpv6Status {
+    fn from(lease: Dhcpv6Lease) -> Self {
+        let validity = if lease.is_valid() { "✅" } else { "❌" };
+
+        Self {
+            timestamp: format!(
+                "{} {}",
+                validity,
+                DateTime::<Local>::from(lease.timestamp).format("%d.%m.%Y %H:%M:%S UTC%Z")
+            ),
+            srvaddr: if lease.server
+                == SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, 0, 0, 0))
+            {
+                String::from("ff02::1:2 (Alle DHCPv6-Server, da der Server keine spezifische Adresse angegeben hat)")
+            } else {
+                format!("{}", lease.server)
+            },
+            srvid: hex::encode(lease.server_id),
+            t1: if lease.t1 == 0 {
+                String::from("Sofort")
+            } else if lease.t1 == u32::MAX {
+                String::from("Nie")
+            } else {
+                let remaining_secs = std::cmp::max(
+                    (Duration::from_secs(lease.t1.into())
+                        - lease.timestamp.elapsed().unwrap_or(Duration::ZERO))
+                    .as_secs(),
+                    0,
+                );
+                format!(
+                    "Alle {} Sekunden ({} Sekunden verbleibend)",
+                    lease.t1, remaining_secs
+                )
+            },
+            t2: if lease.t2 == 0 {
+                String::from("Sofort")
+            } else if lease.t2 == u32::MAX {
+                String::from("Nie")
+            } else {
+                let remaining_secs = std::cmp::max(
+                    (Duration::from_secs(lease.t2.into())
+                        - lease.timestamp.elapsed().unwrap_or(Duration::ZERO))
+                    .as_secs(),
+                    0,
+                );
+                format!(
+                    "Alle {} Sekunden ({} Sekunden verbleibend)",
+                    lease.t2, remaining_secs
+                )
+            },
+            prefix: format!("{}/{}", lease.prefix, lease.len),
+            wanaddr: format!("{}1/64", lease.prefix),
+            preflft: if lease.preflft == 0 {
+                String::from("⚠ Niemals für neue Verbindungen verwenden")
+            } else if lease.preflft == u32::MAX {
+                String::from("Unendlich")
+            } else {
+                let remaining_secs = std::cmp::max(
+                    (Duration::from_secs(lease.preflft.into())
+                        - lease.timestamp.elapsed().unwrap_or(Duration::ZERO))
+                    .as_secs(),
+                    0,
+                );
+                format!(
+                    "{} Sekunden ({} Sekunden verbleibend)",
+                    lease.preflft, remaining_secs
+                )
+            },
+            validlft: if lease.validlft == 0 {
+                String::from("⚠ Internetanbieter verlangte manuell sofortigen Verfall")
+            } else if lease.validlft == u32::MAX {
+                String::from("Unendlich")
+            } else {
+                let remaining_secs = std::cmp::max(
+                    (Duration::from_secs(lease.validlft.into())
+                        - lease.timestamp.elapsed().unwrap_or(Duration::ZERO))
+                    .as_secs(),
+                    0,
+                );
+                format!(
+                    "{} Sekunden ({} Sekunden verbleibend)",
+                    lease.validlft, remaining_secs
+                )
+            },
+            dns1: format!("{}", lease.dns1),
+            dns2: format!("{}", lease.dns2),
+            aftr: match lease.aftr {
+                Some(aftr) => format!("🟢 Aktiviert | Tunnel-Endpunkt (AFTR): {}", aftr),
+                None => String::from("⚪ Deaktiviert"),
+            },
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct Dhcpv6Lease {
+    timestamp: std::time::SystemTime,
+    server: SocketAddr,
+    server_id: Vec<u8>,
+    t1: u32,
+    t2: u32,
+    prefix: Ipv6Addr,
+    len: u8,
+    preflft: u32,
+    validlft: u32,
+    dns1: Ipv6Addr,
+    dns2: Ipv6Addr,
+    aftr: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct Duid {
+    duid: String,
+    status_text: String,
+}
+
+impl Dhcpv6Lease {
+    fn is_valid(&self) -> bool {
+        let expiry = self.timestamp + Duration::from_secs(self.validlft.into());
+        SystemTime::now() < expiry
+    }
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -421,6 +587,191 @@ async fn handle_connection_status_response(response: Response) -> ConnectionStat
     }
 }
 
+#[tauri::command]
+async fn dhcpv6_status(state: State<'_, Mutex<Session>>) -> Result<Dhcpv6Status, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(Dhcpv6Status::with_all(String::from(
+                "❗ Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            )))
+        }
+    };
+
+    let response = client
+        .get(instance.url.join("/data/read").unwrap())
+        .query(&[("path", "/data/dhcp6.lease")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_dhcpv6_status_response(response).await,
+        Err(e) => Dhcpv6Status::with_all(format!("❗ Abfrage fehlgeschlagen: {}", e)),
+    })
+}
+
+async fn handle_dhcpv6_status_response(response: Response) -> Dhcpv6Status {
+    let status = response.status();
+    if status.is_success() {
+        match response.json::<Dhcpv6Lease>().await {
+            Ok(lease) => Dhcpv6Status::from(lease),
+            Err(e) => Dhcpv6Status::with_all(format!("❗ Fehlerhafte Leasedatei. Fehler: {}", e)),
+        }
+    } else if status == StatusCode::UNAUTHORIZED {
+        Dhcpv6Status::with_all(String::from(
+            "❗ Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!",
+        ))
+    } else if status == StatusCode::NOT_FOUND {
+        Dhcpv6Status::no_lease()
+    } else if status.is_client_error() {
+        Dhcpv6Status::with_all(format!("❗ Clientseitiger Fehler: {}", status))
+    } else if status.is_server_error() {
+        Dhcpv6Status::with_all(format!("❗ Serverseitiger Fehler: {}", status))
+    } else {
+        Dhcpv6Status::with_all(format!("❗ Unerwarteter Statuscode: {}", status))
+    }
+}
+
+#[tauri::command]
+async fn load_duid(state: State<'_, Mutex<Session>>) -> Result<Duid, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(Duid {
+                duid: String::new(),
+                status_text: String::from(
+                    "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+                ),
+            })
+        }
+    };
+
+    let response = client
+        .get(instance.url.join("/data/read").unwrap())
+        .query(&[("path", "/data/dhcp6.duid")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_load_duid_response(response).await,
+        Err(e) => Duid {
+            duid: String::new(),
+            status_text: format!("Abruf des aktuellen Client-DUID fehlgeschlagen: {}", e),
+        },
+    })
+}
+
+async fn handle_load_duid_response(response: Response) -> Duid {
+    let status = response.status();
+    if status.is_success() {
+        let bytes = match response.bytes().await {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                return Duid {
+                    duid: String::new(),
+                    status_text: format!(
+                    "Keine Rohdaten vom Server erhalten, bitte Neustart durchführen. Fehler: {}",
+                    e
+                ),
+                }
+            }
+        };
+
+        Duid {
+            duid: hex::encode(bytes),
+            status_text: String::new(),
+        }
+    } else if status == StatusCode::UNAUTHORIZED {
+        Duid {
+            duid: String::new(),
+            status_text: String::from(
+                "Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!",
+            ),
+        }
+    } else if status == StatusCode::NOT_FOUND {
+        Duid{
+    duid:String::new(),
+    status_text:String::from("Kein Client-DUID gespeichert (erster Systemstart oder Stromausfall?), wird bei Bedarf zufällig generiert und gespeichert"),
+    }
+    } else if status.is_client_error() {
+        Duid {
+            duid: String::new(),
+            status_text: format!("Clientseitiger Fehler: {}", status),
+        }
+    } else if status.is_server_error() {
+        Duid {
+            duid: String::new(),
+            status_text: format!("Serverseitiger Fehler: {}", status),
+        }
+    } else {
+        Duid {
+            duid: String::new(),
+            status_text: format!("Unerwarteter Statuscode: {}", status),
+        }
+    }
+}
+
+#[tauri::command]
+async fn change_duid(duid: String, state: State<'_, Mutex<Session>>) -> Result<String, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(String::from(
+                "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            ))
+        }
+    };
+
+    let bytes = match hex::decode(&duid) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            return Ok(format!(
+                "Eingabe ist keine gültige Hexadezimalsequenz: {}",
+                e
+            ))
+        }
+    };
+
+    let response = client
+        .post(instance.url.join("/data/write").unwrap())
+        .query(&[("path", "/data/dhcp6.duid")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .body(bytes)
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_change_duid_response(response),
+        Err(e) => format!("Änderung fehlgeschlagen: {}", e),
+    })
+}
+
+fn handle_change_duid_response(response: Response) -> String {
+    let status = response.status();
+    if status.is_success() {
+        String::from("Änderung erfolgreich")
+    } else if status == StatusCode::UNAUTHORIZED {
+        String::from("Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!")
+    } else if status.is_client_error() {
+        format!("Clientseitiger Fehler: {}", status)
+    } else if status.is_server_error() {
+        format!("Serverseitiger Fehler: {}", status)
+    } else {
+        format!("Unerwarteter Statuscode: {}", status)
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(Mutex::new(Session {
@@ -436,7 +787,10 @@ fn main() {
             load_wan_credentials,
             change_wan_credentials,
             kill,
-            connection_status
+            connection_status,
+            dhcpv6_status,
+            load_duid,
+            change_duid
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

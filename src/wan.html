@@ -116,6 +116,119 @@
           <p id="credentials-status">Warte auf Initialisierung...</p>
         </fieldset>
       </form>
+
+      <br />
+
+      <form id="dhcpv6-form">
+        <fieldset>
+          <legend>DHCPv6-Client</legend>
+
+          <div class="row">
+            <label for="dhcpv6-timestamp" form="dhcpv6-form">Letzte Gültigkeitsbestätigung:</label>
+            <output id="dhcpv6-timestamp">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-srvaddr" form="dhcpv6-form">Serveradresse für weitere Anfragen:</label>
+            <output id="dhcpv6-srvaddr">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-srvid" form="dhcpv6-form">Server-DUID (Hexadezimal):</label>
+            <output id="dhcpv6-srvid">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-t1" form="dhcpv6-form">Verlängerung (Renew):</label>
+            <output id="dhcpv6-t1">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-t2" form="dhcpv6-form">Verlängerung mit Serversuche (Rebind):</label>
+            <output id="dhcpv6-t2">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-prefix" form="dhcpv6-form">Präfix:</label>
+            <output id="dhcpv6-prefix">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-wanaddr" form="dhcpv6-form">WAN-Adresse (aus Präfix abgeleitet):</label>
+            <output id="dhcpv6-wanaddr">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-preflft" form="dhcpv6-form">Verwendungsdauer:</label>
+            <output id="dhcpv6-preflft">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-validlft" form="dhcpv6-form">Gültigkeitsdauer:</label>
+            <output id="dhcpv6-validlft">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-dns1" form="dhcpv6-form">Primärer DNS-Server (nur für DS-Lite AFTR):</label>
+            <output id="dhcpv6-dns1">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-dns2" form="dhcpv6-form">Sekundärer DNS-Server (nur für DS-Lite AFTR):</label>
+            <output id="dhcpv6-dns2">❓ Abfrage...</output>
+          </div>
+
+          <div class="row">
+            <label for="dhcpv6-aftr" form="dhcpv6-form">DS-Lite:</label>
+            <output id="dhcpv6-aftr">❓ Abfrage...</output>
+          </div>
+
+          <br />
+
+          <div class="row">
+            <button id="dhcpv6-kill">🔄 Verlängerung mit Serversuche</button>
+          </div>
+
+          <p>Information: Nur bei einem grünen Haken bei "Letzte
+          Gültigkeitsbestätigung" ist das Präfix gültig und eine Verbindung mit
+          dem IPv6-Internet hergestellt (die reine Einwahl, s. oben, genügt
+          nicht). Bei abgelaufener Verwendungsdauer sollen laut Standard keine
+          neuen Verbindungen mehr aufgebaut werden. Diese Implementation
+          ignoriert diese Begrenzung, um im (anbieterseitigen
+          Software-)Störungsfall eine höhere Verfügbarkeit zu erreichen. Eine
+          Verlängerung mit Serversuche startet den DHCPv6-Client vollständig
+          neu und dauert ca. 30 Sekunden, sollte die Internetverbindung aber
+          nicht beeinträchtigen. Sie kann Abhilfe schaffen, wenn die
+          IPv6-Einwahl gelingt, aber keine Verbindung zum IPv6-Internet besteht
+          oder in dieser Übersicht das Präfix als ungültig angezeigt wird.</p>
+
+          <label for="dhcpv6-duid" form="dhcpv6-form">Client-DUID (Hexadezimal):</label>
+          <div class="row">
+            <input id="dhcpv6-duid" />
+          </div>
+
+          <br />
+
+          <div class="row">
+            <button id="dhcpv6-submit" type="submit">Client-DUID ändern</button>
+          </div>
+
+          <p id="dhcpv6-status">Warte auf Initialisierung...</p>
+
+          <p>Information: Der Client-DUID (<b>D</b>HCP <b>U</b>nique
+          <b>ID</b>entifier) ist ein eindeutiger Wert, den der Internetanbieter
+          für die IPv6-Präfixvergabe verwenden kann. Dieser Wert sollte
+          konstant sein, um das Präfix konstant zu halten und somit weniger oft
+          die Einträge des dynamisches DNS (für Serververfügbarkeit)
+          aktualisieren zu müssen. Die eingesetzte Implementation nutzt den
+          DUID-UUID-Untertyp, der hier eingegebene Wert bezieht sich aber auf
+          den vollständigen DUID, nicht nur auf den UUID-Bestandteil. Er wird
+          zufällig generiert, falls noch kein Wert gespeichert ist oder der
+          gespeicherte Wert ungültig ist. Falls nötig kann der DUID hier
+          eingesehen und verändert werden. Einige Internetanbieter schreiben
+          die Nutzung eines bestimmten DUIDs vor.</p>
+        </fieldset>
+      </form>
     </div>
   </body>
 </html>

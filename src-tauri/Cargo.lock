@@ -2496,6 +2496,8 @@ dependencies = [
 name = "rsdsl_manager"
 version = "0.0.0"
 dependencies = [
+ "chrono",
+ "hex",
  "reqwest",
  "serde",
  "serde_json",
