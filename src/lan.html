@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LAN - RSDSL Verwaltungswerkzeug</title>
+    <script type="module" src="/dashboard.js" defer></script>
+    <script type="module" src="/lan.js" defer></script>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>LAN</h1>
+
+      <div class="row">
+        <form id="dashboard-form">
+          <button id="dashboard-submit" type="submit">↩ Zurück zur Übersicht</button>
+        </form>
+
+        <form id="wan-open-form">
+          <button id="wan-open-submit" type="submit">Einwahl und Zugansdaten</button>
+        </form>
+
+        <form id="lan-open-form">
+          <button id="lan-open-submit" type="submit">LAN</button>
+        </form>
+
+        <form id="ddns-open-form">
+          <button id="ddns-open-submit" type="submit">Dynamisches DNS (INWX)</button>
+        </form>
+
+        <form id="log-open-form">
+          <button id="log-open-submit" type="submit">Diagnoseprotokolle</button>
+        </form>
+
+        <form id="sys-open-form">
+          <button id="sys-open-submit" type="submit">Systemeinstellungen</button>
+        </form>
+
+        <form id="disconnect-form">
+          <button id="disconnect-submit" type="submit">🚪 Abmelden</button>
+        </form>
+      </div>
+
+      <br />
+
+      <form id="vlan-form">
+        <fieldset>
+          <legend>Virtuelle Netzwerke</legend>
+
+          <p>Zur Erhöhung der Sicherheit ist dieses Netzwerk in mehrere
+          virtuelle Subnetze unterteilt. Bei richtiger Verteilung neuer Geräte
+          auf diese Netzwerke wird die Sicherheit der Kernnetze erheblich
+          gesteigert. Die folgende Tabelle listet alle Subnetze auf und
+          beschreibt ihre technischen Informationen und Zwecke.</p>
+
+          <table>
+            <th>
+              <td>WLAN-Name (SSID)</td>
+              <td>VLAN ID</td>
+              <td>Subnetznummer (IPv4)</td>
+              <td>Subnetznummer (IPv6, hexadezimal)</td>
+              <td>Beschreibung</td>
+            </th>
+
+            <tr>
+              <td>Management</td>
+              <td>- (nur kabelgebunden)</td>
+              <td>Kein VLAN</td>
+              <td>0</td>
+              <td>1</td>
+              <td>Verwaltungsnetz für Access Points, Switch und Telefonadapter.
+              Voller Internet- und Verwaltungszugriff. Nur für genannte Geräte
+              oder vorübergehende Diagnosearbeiten bestimmt. Über dieses
+              Netzwerk tauschen sich Access Points und Switch mit dem
+              Konfigurationsserver im lokalen Netz aus.</td>
+            </tr>
+
+            <tr>
+              <td>Trusted</td>
+              <td>WLAN-Kabel</td>
+              <td>10</td>
+              <td>10</td>
+              <td>2</td>
+              <td>Kernnetz für vertrauenswürdige Geräte. Voller Internet- und
+              Verwaltungszugriff. Nur für Computer, Tablets und Smartphones von
+              Familienmitgliedern.</td>
+            </tr>
+
+            <tr>
+              <td>Untrusted</td>
+              <td>Internet</td>
+              <td>20</td>
+              <td>20</td>
+              <td>3</td>
+              <td>Netz für Gäste und internetgebundene IoT-Geräte. Nur für
+              solche Geräte bestimmt, die eine Internetverbindung für ihre
+              Kernfunktionalität zwingend benötigen (ausgenommen Computer,
+              Tablets und Smartphones von Gästen). Keine Kommunikation zwischen
+              diesem Netzwerk und dem Kernnetz möglich, aber voller
+              Internetzugriff. Kein Verwaltungszugriff auf wichtige
+              Netzwerkgeräte, auch nicht mit korrekten Zugangsdaten.</td>
+            </tr>
+
+            <tr>
+              <td>Isolated</td>
+              <td>Schwefelhexafluorid</td>
+              <td>30</td>
+              <td>30</td>
+              <td>4</td>
+              <td>Abgeschottetes Netz für IoT-Geräte ohne Internetzwang (z.B.
+              Drucker). Keine Kommunikation zur Außenwelt möglich (auch nicht
+              zu anderen lokalen Netzen). Kein Verwaltungszugriff auf wichtige
+              Netzwerkgeräte. Geräte in diesem Netz erhalten IP-Adressen nach
+              dem gleichen Muster wie in den anderen Netzwerken, können aber
+              selbst mit den öffentlichen IPv6-Adressen die Firewall nicht
+              passieren. Verbindungen der Geräte untereinander sind erlaubt. Um
+              mit hier untergebrachten Geräten zu kommunizieren, muss der
+              eigene Rechner vorübergehend selbst mit diesem Netzwerk verbunden
+              werden.</td>
+            </tr>
+
+            <tr>
+              <td>Exposed</td>
+              <td>Neuland</td>
+              <td>40</td>
+              <td>40</td>
+              <td>5</td>
+              <td>Servernetz. Keine Kommunikation zu Gerätenetzen möglich, aber
+              Gerätenetze dürfen Verbindungen zu Servern in diesem Netzwerk
+              aufbauen. Voller Internetzugriff, aber kein Verwaltungszugriff
+              auf wichtige Netzwerkgeräte. Enthält den Hauptserver und
+              Telefonadapter. Die Router-Firewall schützt Geräte in diesem
+              Netzwerk nicht und lässt Verbindungsanfragen aus dem öffentlichen
+              Internet zu. Aufgrund von NAT ist nur Telefonie über IPv4
+              freigegeben, alle anderen Dienste sind trotz Firewallausnahme nur
+              über IPv6 erreichbar. Gleiches gilt für temporäre Server auf
+              gewöhnlichen Computern, die vorübergehend mit diesem Netzwerk
+              verbunden werden. Da die öffentliche IPv4-Adresse spätestens bei
+              einem Anbieterwechsel mit großer Wahrscheinlichkeit verschwinden
+              wird, sind bereits jetzt nur IPv6-Freigaben möglich. Dieses
+              Netzwerk wird von Servern verwendet, um bei Kompromittierung die
+              anderen Geräte nicht zu gefährden. Es kann aber auch von
+              gewöhnlichen Rechnern genutzt werden, wenn die Freigabe einer
+              Software für das öffentliche Internet nötig ist.</td>
+            </tr>
+          </table>
+
+          <p>Information: Die privaten IPv4-Adressen folgen der Form
+          10.128.<i>IPv4-Subnetznummer</i>.X, wobei X eine gerätespezifische
+          Zahl zwischen 1 und (einschließlich) 254 ist. Die öffentlichen
+          IPv6-Adressen werden zugewiesen, indem die IPv6-Subnetznummer an das
+          vom Internetanbieter zugewiesene Präfix angehängt wird (optimal ist
+          eine Präfixlänge von /56, die kleinste unterstützte Präfixlänge ist
+          /61) und den Geräten die Wahl der zweiten Adresshälfte überlassen
+          wird. Der Router wählt stets ::1 als eigene zweite Adresshälfte. Die
+          verbindungslokalen IPv6-Adressen werden von den einzelnen Geräten
+          selbst verwaltet, der Router nutzt in jedem Netzwerk (außer der
+          Internetverbindung nach außen) fe80::1.</p>
+        </fieldset>
+      </form>
+
+      <br />
+
+      <form id="dhcpv4-form">
+        <fieldset>
+          <legend>DHCPv4-Server</legend>
+
+          <span class="row" id="dhcpv4-starthostid">Startadresse der dynamischen Vergabe (nur letztes Oktett): 100</span>
+          <span class="row" id="dhcpv4-endhostid"></span>Endadresse (inkl.) der dynamischen Vergabe (nur letztes Oktett): 239</span>
+          <span class="row" id="dhcpv4-self">Routeradresse (nur letztes Oktett): 254</span>
+          <span class="row" id="dhcpv4-netmask">Subnetzmaske: 255.255.255.0 (CIDR: /24)</span>
+          <span class="row" id="dhcpv4-leasetime">Gültigkeitsdauer dynamisch vergebener Adressen: 12 Stunden (43200 Sekunden)</span>
+
+          <p>Information: Wichtige Netzwerkgeräte sind statisch mit Adressen
+          mit letztem Oktett 240 und aufwärts konfiguriert. Normale Geräte, die
+          eine statische bzw. manuelle Adressvergabe benötigen, sollten
+          Adressen mit letztem Oktett echt kleiner als 100 verwenden.</p>
+
+          <p>Information: Dynamisch vergebene Adressen bleiben in der Regel
+          auch nach Ablauf der Gültigkeitsdauer konstant, d.h. beim nächsten
+          Verbindungsaufbau des entsprechenden Gerätes wird wieder die gleiche
+          Adresse zugewiesen. Hierzu wird ein Verfahren verwendet, welches die
+          IP-Adresse aus der Hardwareadresse berechnet. Ausnahmen können
+          entstehen, wenn der Zuweisungsalgorithmus eine Kollision erkennt,
+          also wenn mehrere Geräte die gleiche IP-Adresse zugewiesen bekommen
+          würden. In derartigen Fällen wird eine alternative Adresse gesucht
+          und zugewiesen. Werden nun beide Geräte für die restliche
+          Gültigkeitsdauer vom Netzwerk getrennt und danach in umgekehrter
+          Reihenfolge wieder verbunden, werden ihre IP-Adressen vertauscht.
+          Dies hat keine Auswirkung auf die Internetverbindung und bedeutet
+          lediglich, dass nicht garantiert ist, dass der DHCP-Server jedem
+          Gerät stets die gleiche Adresse zuweist (Standardverhalten aller
+          gängigen Implementationen). Werden feste Adressen benötigt, so müssen
+          diese direkt auf den jeweiligen Geräten eingetragen und DHCP in deren
+          Einstellungen deaktiviert werden.</p>
+
+          <fieldset>
+            <legend>Wichtige, statisch konfigurierte Netzwerkgeräte (nicht per DHCP verwaltet)</legend>
+
+            <span class="row">192.168.1.1/24: DSL-Modem</span>
+            <span class="row">10.128.0.248/24: Switch</span>
+            <span class="row">10.128.0.249/24: Access Point im Dachgeschoss</span>
+            <span class="row">10.128.0.250/24: Access Point im Obergeschoss</span>
+            <span class="row">10.128.0.251/24: Access Point im Erdgeschoss</span>
+            <span class="row">10.128.0.253/24 und 10.128.40.253/24: Hauptserver</span>
+            <span class="row">10.128.40.252/24: Telefonadapter</span>
+          </fieldset>
+
+          <fieldset>
+            <legend>Dynamisch vergebene Adressen</legend>
+
+            <h4>Management</h4>
+            <table id="dhcpv4-clients-management">
+              <th>
+                <td>Client-ID (hexadezimal, ohne Doppelpunkttrennung)</td>
+                <td>Rechnername</td>
+                <td>Ablaufzeitpunkt</td>
+              </th>
+            </table>
+
+            <div class="row">
+              <output id="dhcpv4-status-management">Warte auf Initialisierung...</output>
+            </div>
+
+            <h4>Trusted (WLAN-Kabel)</h4>
+            <table id="dhcpv4-clients-trusted">
+              <th>
+                <td>Client-ID (hexadezimal, ohne Doppelpunkttrennung)</td>
+                <td>Rechnername</td>
+                <td>Ablaufzeitpunkt</td>
+              </th>
+            </table>
+
+            <div class="row">
+              <output id="dhcpv4-status-trusted">Warte auf Initialisierung...</output>
+            </div>
+
+            <h4>Untrusted (Internet)</h4>
+            <table id="dhcpv4-clients-untrusted">
+              <th>
+                <td>Client-ID (hexadezimal, ohne Doppelpunkttrennung)</td>
+                <td>Rechnername</td>
+                <td>Ablaufzeitpunkt</td>
+              </th>
+            </table>
+
+            <div class="row">
+              <output id="dhcpv4-status-untrusted">Warte auf Initialisierung...</output>
+            </div>
+
+            <h4>Isolated (Schwefelhexafluorid)</h4>
+            <table id="dhcpv4-clients-isolated">
+              <th>
+                <td>Client-ID (hexadezimal, ohne Doppelpunkttrennung)</td>
+                <td>Rechnername</td>
+                <td>Ablaufzeitpunkt</td>
+              </th>
+            </table>
+
+            <div class="row">
+              <output id="dhcpv4-status-isolated">Warte auf Initialisierung...</output>
+            </div>
+
+            <h4>Exposed (Neuland)</h4>
+            <table id="dhcpv4-clients-exposed">
+              <th>
+                <td>Client-ID (hexadezimal, ohne Doppelpunkttrennung)</td>
+                <td>Rechnername</td>
+                <td>Ablaufzeitpunkt</td>
+              </th>
+            </table>
+
+            <div class="row">
+              <output id="dhcpv4-status-exposed">Warte auf Initialisierung...</output>
+            </div>
+
+            <br />
+
+            <p>Information: Abgelaufene Leases werden erst bei der nächsten
+            Anfrage an den Server aus der Liste entfernt. Dies kann Minuten
+            oder Wochen dauern.</p>
+
+            <p>Information: Die Client-ID wird nicht von allen Geräten
+            mitgesendet. Insbesondere IoT-Geräte teilen dem Server oft keinen
+            eigenen Wert mit. In diesen Fällen erzeugt der Server automatisch
+            eine Client-ID nach dem Muster 01:HARDWAREADRESSE.</p>
+
+            <p>Information: Der Rechnername wird nicht von allen Geräten
+            mitgesendet. Insbesondere iOS-Geräte verschleiern ihn oft. Das
+            Deaktivieren der Option "Private WLAN-Adresse verwenden" in den
+            Einstellungen der WLAN-Verbindung (Info-I-Symbol) kann Abhilfe
+            schaffen. Unbekannte Rechnernamen beeinträchtigen die
+            Internetverbindung nicht, erschweren aber die Identifikation der
+            Geräte (Client-ID und Diagnoseprotokoll des DNS-Forwarders können
+            sie weiterhin deanonymisieren).</p>
+          </fieldset>
+        </fieldset>
+      </form>
+
+      <br />
+
+      <form id="slaac-form">
+        <fieldset>
+          <legend>SLAAC-Server</legend>
+
+          <span class="row" id="slaac-flags">Flags: On-Link, Autonomous (A)</span>
+          <span class="row" id="slaac-ralft">Standardgateway-Gültigkeitsdauer: 1800 Sekunden</span>
+          <span class="row" id="slaac-preflft">Präfix-Verwendungsdauer: 1500 Sekunden</span>
+          <span class="row" id="slaac-validlft">Präfix-Gültigkeitsdauer: 1800 Sekunden</span>
+          <span class="row" id="slaac-dnslft">DNS-Server-Gültigkeitsdauer: 1800 Sekunden</span>
+
+          <p>Information: IPv6-Adressen werden per SLAAC zugewiesen, DHCPv6 im
+          Heimnetz wird nicht unterstützt. Das bedeutet, dass der Router auf
+          jedem Netzwerk periodisch sowie auf Anfrage beitretender Geräte das
+          jeweilige öffentliche Präfix und weitere Parameter verbreitet (ULA
+          bzw. eindeutige lokale IPv6-Adressen werden nicht unterstützt). Die
+          Geräte wählen die zweite Adresshälfte selbst und stellen sicher, dass
+          diese nicht mit existierenden Adressen anderer Rechner kollidieren.
+          Daher ist dem Router nicht bekannt, welche Adressen existieren,
+          weshalb sie hier nicht aufgelistet werden können. Scans mit anderen
+          Netzwerk-Dienstprogrammen zusammen mit den Diagnoseprotokollen können
+          dieses Problem lösen. Die beste Methode wäre ein DHCPv6-Server, der
+          aber aufgrund des höheren Aufwands und der fehlenden Kompatibilität
+          mit Android-Geräten nicht vorhanden ist.  Zudem können Geräte
+          beliebig viele Adressen beanspruchen, was aufgrund der Größe des
+          Adressraums (2⁶⁴) nicht problematisch, sondern insbesondere auf
+          Servern sogar hilfreich ist. Die Präfixableitung für die
+          verschiedenen Subnetze ist unter dem Punkt "Virtuelle Netzwerke"
+          beschrieben.</p>
+
+          <p>Statische Adressen bzw. Suffixe können auf den Geräten selbst
+          eingestellt werden. Auch andere Parameter können dort überschrieben
+          werden. Präfixbezogenes dynamisches DNS ist unter dem Menüpunkt
+          "Dynamisches DNS (INWX)" konfigurierbar.</p>
+        </fieldset>
+      </form>
+
+      <br />
+
+      <form id="dns-form">
+        <fieldset>
+          <legend>DNS</legend>
+
+          <span class="row" id="dns-primary-us">Primärer DNS-Server: 2620:fe::fe (Quad9)</span>
+          <span class="row" id="dns-secondary-us">Sekundärer DNS-Server: 9.9.9.9 (Quad9)</span>
+          <span class="row" id="dns-primary-ds">Lokaler DNS-Server (IPv4): 10.128.SUBNETZ.254</span>
+          <span class="row" id="dns-secondary-ds">Lokaler DNS-Server (IPv6): fe80::1</span>
+
+          <br />
+
+          <div class="row">
+            <button id="dns-kill">🔄 Forwarder-Neustart</button>
+          </div>
+
+          <p>Information: Anfragen lokaler Geräte werden an die oberen beiden
+          DNS-Server weitergeleitet (zuerst an den primären Server, bei Fehlern
+          nach max. 3 Sekunden an den sekundären Server). Auf lokalen Geräten
+          wird automatisch dieser Router als DNS-Server eingestellt. Sollte die
+          manuelle Konfiguration eines Geräts nötig sein, nutzen Sie die
+          unteren beiden Werte. Für IPv4 ist SUBNETZ je nach Netzwerkname mit
+          folgender Zahl zu ersetzen: 10 für "WLAN-Kabel", 20 für "Internet",
+          30 für "Schwefelhexafluorid", 40 für "Neuland" und 0 für direkte
+          Kabelverbindungen ohne VLAN (s. "Virtuelle Netzwerke"). Ein Neustart
+          des DNS-Forwarders dauert ca. 30 Sekunden. Während dieser Zeit können
+          abgehende Verbindungen ins Internet fehlschlagen und bestehende
+          Verbindungen unterbrochen werden. Möglicherweise muss danach der
+          Telefonadapter ebenfalls neu gestartet werden, um den Telefoniedienst
+          wiederherzustellen (falls beeinträchtigt). Im Normalfall sind
+          derartige Neustarts nicht nötig, mit Ausnahme von Änderungen an der
+          lokalen Domain.</p>
+
+          <label for="dns-domain" form="dns-form">Lokale Domain:</label>
+          <div class="row">
+            <input id="dns-domain" placeholder="z.B. local, lan, home etc." />
+          </div>
+
+          <br />
+
+          <div class="row">
+            <button id="dns-unset">Domain entfernen</button>
+            <button id="dns-submit" type="submit">Domain ändern</button>
+          </div>
+
+          <p id="dns-status">Warte auf Initialisierung...</p>
+
+          <p>Information: Die lokale Domain ist ein optionales, empfohlenes
+          Suffix, unter dem Geräte in den lokalen Netzwerken erreichbar sind.
+          Beispielsweise wäre ein Gerät mit dem Namen "Arbeitsrechner" bei der
+          lokalen Domain "example.com" sowohl unter "Arbeitsrechner" als auch
+          unter "Arbeitsrechner.example.com" erreichbar. Diese Erreichbarkeit
+          gilt nicht für Zugriffe aus dem öffentlichen Internet. Die lokale
+          Domain sollte für dieses Netzwerk nur verändert werden, wenn dies
+          wirklich nötig ist.</p>
+        </fieldset>
+      </form>
+    </div>
+  </body>
+</html>

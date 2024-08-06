@@ -162,7 +162,7 @@ impl From<Dhcpv6Lease> for Dhcpv6Status {
             {
                 String::from("ff02::1:2 (Alle DHCPv6-Server, da der Server keine spezifische Adresse angegeben hat)")
             } else {
-                format!("{}", lease.server)
+                lease.server.to_string()
             },
             srvid: hex::encode(lease.server_id),
             t1: if lease.t1 == 0 {
@@ -231,8 +231,8 @@ impl From<Dhcpv6Lease> for Dhcpv6Status {
                     lease.validlft, remaining_secs
                 )
             },
-            dns1: format!("{}", lease.dns1),
-            dns2: format!("{}", lease.dns2),
+            dns1: lease.dns1.to_string(),
+            dns2: lease.dns2.to_string(),
             aftr: match lease.aftr {
                 Some(aftr) => format!("🟢 Aktiviert | Tunnel-Endpunkt (AFTR): {}", aftr),
                 None => String::from("⚪ Deaktiviert"),
@@ -267,6 +267,70 @@ impl Dhcpv6Lease {
     fn is_valid(&self) -> bool {
         let expiry = self.timestamp + Duration::from_secs(self.validlft.into());
         SystemTime::now() < expiry
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct Dhcpv4Lease {
+    address: Ipv4Addr,
+    expires: SystemTime,
+    client_id: Vec<u8>,
+    hostname: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct LeaseRow {
+    addr: String,
+    client_id: String,
+    hostname: String,
+    expires: String,
+}
+
+#[derive(Debug, Serialize)]
+struct Leases {
+    clients: Vec<LeaseRow>,
+    status_text: String,
+}
+
+#[derive(Debug, Serialize)]
+struct Domain {
+    domain: String,
+    status_text: String,
+}
+
+impl FromIterator<Dhcpv4Lease> for Leases {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = Dhcpv4Lease>,
+    {
+        Self {
+            clients: iter
+                .into_iter()
+                .map(|lease| {
+                    let remaining_secs = std::cmp::max(
+                        (lease
+                            .expires
+                            .duration_since(SystemTime::now())
+                            .unwrap_or(Duration::ZERO))
+                        .as_secs(),
+                        0,
+                    );
+
+                    LeaseRow {
+                        addr: lease.address.to_string(),
+                        client_id: hex::encode(lease.client_id),
+                        hostname: lease.hostname.unwrap_or_default(),
+                        expires: format!(
+                            "{} ({} Sekunden verbleibend)",
+                            DateTime::<Local>::from(lease.expires)
+                                .format("%d.%m.%Y %H:%M:%S UTC%Z"),
+                            remaining_secs
+                        ),
+                    }
+                })
+                .collect(),
+            status_text: String::new(),
+        }
     }
 }
 
@@ -772,6 +836,259 @@ fn handle_change_duid_response(response: Response) -> String {
     }
 }
 
+#[tauri::command]
+async fn leases(subnet: String, state: State<'_, Mutex<Session>>) -> Result<Leases, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(Leases {
+                clients: Vec::new(),
+                status_text: String::from("Keine Instanz ausgewählt, bitte melden Sie sich neu an"),
+            })
+        }
+    };
+
+    let leases_path = format!(
+        "/data/dhcp4d.leases_eth0{}",
+        match subnet.as_str() {
+            "management" => "",
+            "trusted" => ".10",
+            "untrusted" => ".20",
+            "isolated" => ".30",
+            "exposed" => ".40",
+            subnet =>
+                return Ok(Leases {
+                    clients: Vec::new(),
+                    status_text: format!(
+                        r#"Anwendungsinterner Fehler: Ungültiges Subnetz ("management", "trusted", "untrusted", "isolated" oder "exposed" erwartet, "{}" erhalten)"#,
+                        subnet
+                    )
+                }),
+        }
+    );
+
+    let response = client
+        .get(instance.url.join("/data/read").unwrap())
+        .query(&[("path", leases_path)])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_leases_response(response).await,
+        Err(e) => Leases {
+            clients: Vec::new(),
+            status_text: format!("Abfrage fehlgeschlagen: {}", e),
+        },
+    })
+}
+
+async fn handle_leases_response(response: Response) -> Leases {
+    let status = response.status();
+    if status.is_success() {
+        match response.json::<Vec<Dhcpv4Lease>>().await {
+            Ok(leases) => Leases::from_iter(leases),
+            Err(e) => Leases {
+                clients: Vec::new(),
+                status_text: format!("Fehlerhafte Leasedatei. Fehler: {}", e),
+            },
+        }
+    } else if status == StatusCode::UNAUTHORIZED {
+        Leases {
+            clients: Vec::new(),
+            status_text: String::from(
+                "Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!",
+            ),
+        }
+    } else if status == StatusCode::NOT_FOUND {
+        Leases {
+            clients: Vec::new(),
+            status_text: String::from(
+                "Noch keine Leasedatei vorhanden (erster Systemstart oder Stromausfall?)",
+            ),
+        }
+    } else if status.is_client_error() {
+        Leases {
+            clients: Vec::new(),
+            status_text: format!("Clientseitiger Fehler: {}", status),
+        }
+    } else if status.is_server_error() {
+        Leases {
+            clients: Vec::new(),
+            status_text: format!("Serverseitiger Fehler: {}", status),
+        }
+    } else {
+        Leases {
+            clients: Vec::new(),
+            status_text: format!("Unerwarteter Statuscode: {}", status),
+        }
+    }
+}
+
+#[tauri::command]
+async fn load_domain(state: State<'_, Mutex<Session>>) -> Result<Domain, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(Domain {
+                domain: String::new(),
+                status_text: String::from(
+                    "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+                ),
+            })
+        }
+    };
+
+    let response = client
+        .get(instance.url.join("/data/read").unwrap())
+        .query(&[("path", "/data/dnsd.domain")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_load_domain_response(response).await,
+        Err(e) => Domain {
+            domain: String::new(),
+            status_text: format!("Abfrage fehlgeschlagen: {}", e),
+        },
+    })
+}
+
+async fn handle_load_domain_response(response: Response) -> Domain {
+    let status = response.status();
+    if status.is_success() {
+        match response.text().await {
+            Ok(domain) => Domain {
+                domain,
+                status_text: String::new(),
+            },
+            Err(e) => Domain {
+                domain: String::new(),
+                status_text: format!("Keinen Text vom Server erhalten. Fehler: {}", e),
+            },
+        }
+    } else if status == StatusCode::UNAUTHORIZED {
+        Domain {
+            domain: String::new(),
+            status_text: format!("Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!"),
+        }
+    } else if status == StatusCode::NOT_FOUND {
+        Domain {
+            domain: String::new(),
+            status_text: format!("Keine lokale Domain eingestellt"),
+        }
+    } else if status.is_client_error() {
+        Domain {
+            domain: String::new(),
+            status_text: format!("Clientseitiger Fehler: {}", status),
+        }
+    } else if status.is_server_error() {
+        Domain {
+            domain: String::new(),
+            status_text: format!("Serverseitiger Fehler: {}", status),
+        }
+    } else {
+        Domain {
+            domain: String::new(),
+            status_text: format!("Unerwarteter Statuscode: {}", status),
+        }
+    }
+}
+
+#[tauri::command]
+async fn change_domain(domain: String, state: State<'_, Mutex<Session>>) -> Result<String, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(String::from(
+                "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            ))
+        }
+    };
+
+    let response = client
+        .post(instance.url.join("/data/write").unwrap())
+        .query(&[("path", "/data/dnsd.domain")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .body(domain)
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_change_domain_response(response),
+        Err(e) => format!("Änderung fehlgeschlagen: {}", e),
+    })
+}
+
+fn handle_change_domain_response(response: Response) -> String {
+    let status = response.status();
+    if status.is_success() {
+        String::from("Änderung erfolgreich")
+    } else if status == StatusCode::UNAUTHORIZED {
+        String::from("Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!")
+    } else if status.is_client_error() {
+        format!("Clientseitiger Fehler: {}", status)
+    } else if status.is_server_error() {
+        format!("Serverseitiger Fehler: {}", status)
+    } else {
+        format!("Unerwarteter Statuscode: {}", status)
+    }
+}
+
+#[tauri::command]
+async fn delete(file_path: String, state: State<'_, Mutex<Session>>) -> Result<String, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(String::from(
+                "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            ))
+        }
+    };
+
+    let response = client
+        .post(instance.url.join("/data/remove").unwrap())
+        .query(&[("path", file_path)])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_delete_response(response),
+        Err(e) => format!("Löschung fehlgeschlagen: {}", e),
+    })
+}
+
+fn handle_delete_response(response: Response) -> String {
+    let status = response.status();
+    if status.is_success() {
+        String::from("Löschung erfolgreich")
+    } else if status == StatusCode::UNAUTHORIZED {
+        String::from("Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!")
+    } else if status == StatusCode::NOT_FOUND {
+        String::from("Bereits gelöscht (keine unnötige Änderung vorgenommen)")
+    } else if status.is_client_error() {
+        format!("Clientseitiger Fehler: {}", status)
+    } else if status.is_server_error() {
+        format!("Serverseitiger Fehler: {}", status)
+    } else {
+        format!("Unerwarteter Statuscode: {}", status)
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(Mutex::new(Session {
@@ -790,7 +1107,11 @@ fn main() {
             connection_status,
             dhcpv6_status,
             load_duid,
-            change_duid
+            change_duid,
+            leases,
+            load_domain,
+            change_domain,
+            delete
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
