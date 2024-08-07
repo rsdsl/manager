@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diagnoseprotokolle - RSDSL Verwaltungswerkzeug</title>
+    <script type="module" src="/dashboard.js" defer></script>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Diagnoseprotokolle</h1>
+
+      <div class="row">
+        <form id="dashboard-form">
+          <button id="dashboard-submit" type="submit">↩ Zurück zur Übersicht</button>
+        </form>
+
+        <form id="wan-open-form">
+          <button id="wan-open-submit" type="submit">Einwahl und Zugansdaten</button>
+        </form>
+
+        <form id="lan-open-form">
+          <button id="lan-open-submit" type="submit">LAN</button>
+        </form>
+
+        <form id="log-open-form">
+          <button id="log-open-submit" type="submit">Diagnoseprotokolle</button>
+        </form>
+
+        <form id="sys-open-form">
+          <button id="sys-open-submit" type="submit">System</button>
+        </form>
+
+        <form id="disconnect-form">
+          <button id="disconnect-submit" type="submit">🚪 Abmelden</button>
+        </form>
+      </div>
+
+      <p>Information: Die folgenden Diagnoseprotokolle enthalten technisch
+      detaillierte Informationen über die Aktivitäten verschiedener
+      Systemdienste. Sie sind nur bei ausreichendem technischen Verständnis und
+      Englischkenntnissen nützlich und können wegweisend bei der Behebung von
+      Verbindungsproblemen sein. Alle Protokolle liegen ausschließlich im
+      Arbeitsspeicher, um die SD-Karte nicht zu belasten, und gehen bei einem
+      Systemneustart (oder Herunterfahren) verloren. Bei Neustarts eines
+      einzelnen Dienstes gehen nur dessen Protokolle verloren. Desweiteren ist
+      die Größe einzelner Protokolle auf 30 MB begrenzt. Wird diese Grenze
+      erreicht, werden alle bisherigen Inhalte des Protokolls gelöscht, um
+      neuen Speicherplatz zu schaffen. Dies ist in der Regel nur für den
+      DNS-Forwarder relevant (und abhängig von der Intensität der
+      Internetnutzung), da die anderen Dienste deutlich langsamer
+      Protokollnachrichten anhäufen.</p>
+
+      <p><b>Aufgrund der potentiellen großen Datenmenge werden die Protokolle
+      des DNS-Forwarders nicht in Echtzeit aktualisiert. Klicken Sie hierzu
+      manuell auf den Menüpunkt "Diagnoseprotokolle" in der oberen
+      Navigationsleiste.</b></p>
+
+      <p>Zu Protokollen des folgenden Dienstes springen (blaue Links sind anklickbar):</p>
+
+      <a class="row" href="#log-admind">Verwaltungsschnittstelle</a>
+      <a class="row" href="#log-netlinkd">Netzwerkschnittstellenkonfigurator</a>
+      <a class="row" href="#log-netfilterd">Firewall</a>
+      <a class="row" href="#log-dhcp4d">DHCPv4-Server (private IPv4-Adressvergabe)</a>
+      <a class="row" href="#log-pppoe3">PPPoE-Einwähler</a>
+      <a class="row" href="#log-dhcp6">DHCPv6-Client</a>
+      <a class="row" href="#log-dnsd">DNS-Forwarder</a>
+      <a class="row" href="#log-dslite">DS-Lite-Tunnelkonfigurator</a>
+      <a class="row" href="#log-ntp">Zeitsynchronisations- und Speicherungsdienst (NTP-Client)</a>
+      <a class="row" href="#log-radvd">SLAAC-Server (IPv6-Adressvergabe)</a>
+      <a class="row" href="#log-netdumpd">Paketmitschnittdienst</a>
+      <a class="row" href="#log-dyndns">IPv6-Präfixfähiger DynDNS-Updater für INWX</a>
+
+      <br />
+
+      <fieldset id="log-admind">
+        <legend>Verwaltungsschnittstelle</legend>
+        <textarea id="log-admind-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-admind-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+    </div>
+  </body>
+</html>

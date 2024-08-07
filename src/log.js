@@ -12,6 +12,10 @@ function lanOpen() {
   window.location = "lan.html";
 }
 
+function ddnsOpen() {
+  window.location = "ddns.html";
+}
+
 function logOpen() {
   window.location = "log.html";
 }
@@ -38,6 +42,10 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#lan-open-form").addEventListener("submit", (e) => {
     e.preventDefault();
     lanOpen();
+  });
+  document.querySelector("#ddns-open-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    ddnsOpen();
   });
   document.querySelector("#log-open-form").addEventListener("submit", (e) => {
     e.preventDefault();
