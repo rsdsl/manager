@@ -1225,6 +1225,55 @@ fn handle_shutdown_response(response: Response) -> String {
     }
 }
 
+#[tauri::command]
+async fn log_read(logfile: String, state: State<'_, Mutex<Session>>) -> Result<String, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(String::from(
+                "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            ))
+        }
+    };
+
+    let response = client
+        .get(instance.url.join("/data/read").unwrap())
+        .query(&[("path", format!("/tmp/{}", logfile))])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_log_read_response(response).await,
+        Err(e) => format!("Abfrage fehlgeschlagen: {}", e),
+    })
+}
+
+async fn handle_log_read_response(response: Response) -> String {
+    let status = response.status();
+    if status.is_success() {
+        match response.text().await {
+            Ok(logs) => logs,
+            Err(e) => format!("Keinen Text vom Server erhalten. Fehler: {}", e),
+        }
+    } else if status == StatusCode::UNAUTHORIZED {
+        String::from("Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!")
+    } else if status == StatusCode::NOT_FOUND {
+        String::from(
+            "Protokolldatei existiert nicht, möglicherweise ist der Dienst noch nicht gestartet",
+        )
+    } else if status.is_client_error() {
+        format!("Clientseitiger Fehler: {}", status)
+    } else if status.is_server_error() {
+        format!("Serverseitiger Fehler: {}", status)
+    } else {
+        format!("Unerwarteter Statuscode: {}", status)
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(Mutex::new(Session {
@@ -1250,7 +1299,8 @@ fn main() {
             delete,
             change_sys_password,
             reboot,
-            shutdown
+            shutdown,
+            log_read
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

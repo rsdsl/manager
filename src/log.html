@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Diagnoseprotokolle - RSDSL Verwaltungswerkzeug</title>
     <script type="module" src="/dashboard.js" defer></script>
+	<script type="module" src="/log.js" defer></script>
   </head>
 
   <body>
@@ -53,25 +54,73 @@
       Internetnutzung), da die anderen Dienste deutlich langsamer
       Protokollnachrichten anhäufen.</p>
 
-      <p><b>Aufgrund der potentiellen großen Datenmenge werden die Protokolle
+      <!-- <p><b>Aufgrund der potentiellen großen Datenmenge werden die Protokolle
       des DNS-Forwarders nicht in Echtzeit aktualisiert. Klicken Sie hierzu
       manuell auf den Menüpunkt "Diagnoseprotokolle" in der oberen
-      Navigationsleiste.</b></p>
+      Navigationsleiste oder nutzen Sie den Knopf "Aktualisieren" bei den
+      DNS-Protokollen.</b></p> -->
+      
+      <p>Aufgrund ihrer Größe sind die Protokolle des DNS-Forwarders hier nicht
+      abrufbar. Verwenden Sie hierzu bitte direkt die HTTPS-API (nur technisch
+      versierte Nutzer).</p>
+
+      <p>Information: Sämtliche Zeitstempel sind in UTC angegeben. Zur
+      Winterzeit muss 1 Stunde, zur Sommerzeit 2 Stunden addiert werden, um die
+      Zeit in MEZ bzw. MESZ zu erhalten.</p>
+
+      <p>Information: Das obere Textfeld ist jeweils die Hauptausgabe und das
+      untere Textfeld die Fehlerausgabe, die auch bei vollständigen Abstürzen
+      zum Einsatz kommt.</p>
 
       <p>Zu Protokollen des folgenden Dienstes springen (blaue Links sind anklickbar):</p>
 
-      <a class="row" href="#log-admind">Verwaltungsschnittstelle</a>
-      <a class="row" href="#log-netlinkd">Netzwerkschnittstellenkonfigurator</a>
-      <a class="row" href="#log-netfilterd">Firewall</a>
-      <a class="row" href="#log-dhcp4d">DHCPv4-Server (private IPv4-Adressvergabe)</a>
-      <a class="row" href="#log-pppoe3">PPPoE-Einwähler</a>
-      <a class="row" href="#log-dhcp6">DHCPv6-Client</a>
-      <a class="row" href="#log-dnsd">DNS-Forwarder</a>
-      <a class="row" href="#log-dslite">DS-Lite-Tunnelkonfigurator</a>
-      <a class="row" href="#log-ntp">Zeitsynchronisations- und Speicherungsdienst (NTP-Client)</a>
-      <a class="row" href="#log-radvd">SLAAC-Server (IPv6-Adressvergabe)</a>
-      <a class="row" href="#log-netdumpd">Paketmitschnittdienst</a>
-      <a class="row" href="#log-dyndns">IPv6-Präfixfähiger DynDNS-Updater für INWX</a>
+      <div class="row">
+        <a href="#log-admind">Verwaltungsschnittstelle</a>
+      </div>
+
+      <div class="row">
+        <a href="#log-netlinkd">Netzwerkschnittstellenkonfigurator</a>
+      </div>
+
+      <div class="row">
+        <a href="#log-netfilterd">Firewall</a>
+      </div>
+
+      <div class="row">
+        <a href="#log-dhcp4d">DHCPv4-Server (private IPv4-Adressvergabe)</a>
+      </div>
+
+      <div class="row">
+        <a href="#log-pppoe3">PPPoE-Einwähler</a>
+      </div>
+
+      <div class="row">
+        <a href="#log-dhcp6">DHCPv6-Client</a>
+      </div>
+
+      <!-- <div class="row">
+        <a href="#log-dnsd">DNS-Forwarder</a>
+      </div> -->
+
+      <div class="row">
+        <a href="#log-dslite">DS-Lite-Tunnelkonfigurator</a>
+      </div>
+
+      <div class="row">
+        <a href="#log-ntp">Zeitsynchronisations- und Speicherungsdienst (NTP-Client)</a>
+      </div>
+
+      <div class="row">
+        <a href="#log-radvd">SLAAC-Server (IPv6-Adressvergabe)</a>
+      </div>
+
+      <div class="row">
+        <a href="#log-netdumpd">Paketmitschnittdienst</a>
+      </div>
+
+      <div class="row">
+        <a href="#log-dyndns">IPv6-Präfixfähiger DynDNS-Updater für INWX</a>
+      </div>
 
       <br />
 
@@ -79,6 +128,101 @@
         <legend>Verwaltungsschnittstelle</legend>
         <textarea id="log-admind-stdout" rows="20" cols="160"></textarea>
         <textarea id="log-admind-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br />
+
+      <fieldset id="log-netlinkd">
+        <legend>Netzwerkschnittstellenkonfigurator</legend>
+        <textarea id="log-netlinkd-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-netlinkd-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br />
+
+      <fieldset id="log-netfilterd">
+        <legend>Firewall</legend>
+        <textarea id="log-netfilterd-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-netfilterd-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br />
+
+      <fieldset id="log-dhcp4d">
+        <legend>DHCPv4-Server (private IPv4-Adressvergabe)</legend>
+        <textarea id="log-dhcp4d-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-dhcp4d-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br />
+
+      <fieldset id="log-pppoe3">
+        <legend>PPPoE-Einwähler</legend>
+        <textarea id="log-pppoe3-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-pppoe3-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br />
+
+      <fieldset id="log-dhcp6">
+        <legend>DHCPv6-Client</legend>
+        <textarea id="log-dhcp6-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-dhcp6-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br />
+
+      <!-- <fieldset id="log-dnsd">
+        <legend>DNS-Forwarder</legend>
+
+        <div class="row">
+          <button id="log-dnsd-refresh">🔄 Aktualisieren</button>
+        </div>
+
+        <br />
+
+        <textarea id="log-dnsd-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-dnsd-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br /> -->
+
+      <fieldset id="log-dslite">
+        <legend>DS-Lite-Tunnelkonfigurator</legend>
+        <textarea id="log-dslite-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-dslite-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br />
+
+      <fieldset id="log-ntp">
+        <legend>Zeitsynchronisations- und Speicherungsdienst (NTP-Client)</legend>
+        <textarea id="log-ntp-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-ntp-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br />
+
+      <fieldset id="log-radvd">
+        <legend>SLAAC-Server (IPv6-Adressvergabe)</legend>
+        <textarea id="log-radvd-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-radvd-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br />
+
+      <fieldset id="log-netdumpd">
+        <legend>Paketmitschnittdienst</legend>
+        <textarea id="log-netdumpd-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-netdumpd-stderr" rows="20" cols="160"></textarea>
+      </fieldset>
+
+      <br />
+
+      <fieldset id="log-dyndns">
+        <legend>IPv6-Präfixfähiger DynDNS-Updater für INWX</legend>
+        <textarea id="log-dyndns-stdout" rows="20" cols="160"></textarea>
+        <textarea id="log-dyndns-stderr" rows="20" cols="160"></textarea>
       </fieldset>
     </div>
   </body>
