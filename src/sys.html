@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>System - RSDSL Verwaltungswerkzeug</title>
+    <script type="module" src="/dashboard.js" defer></script>
+    <script type="module" src="/sys.js" defer></script>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>System</h1>
+
+      <div class="row">
+        <form id="dashboard-form">
+          <button id="dashboard-submit" type="submit">↩ Zurück zur Übersicht</button>
+        </form>
+
+        <form id="wan-open-form">
+          <button id="wan-open-submit" type="submit">Einwahl und Zugansdaten</button>
+        </form>
+
+        <form id="lan-open-form">
+          <button id="lan-open-submit" type="submit">LAN</button>
+        </form>
+
+        <form id="ddns-open-form">
+          <button id="ddns-open-submit" type="submit">Dynamisches DNS (INWX)</button>
+        </form>
+
+        <form id="log-open-form">
+          <button id="log-open-submit" type="submit">Diagnoseprotokolle</button>
+        </form>
+
+        <form id="sys-open-form">
+          <button id="sys-open-submit" type="submit">System</button>
+        </form>
+
+        <form id="disconnect-form">
+          <button id="disconnect-submit" type="submit">🚪 Abmelden</button>
+        </form>
+      </div>
+
+      <br />
+
+      <form id="power-form">
+        <fieldset>
+          <legend>Neustart und Herunterfahren</legend>
+
+          <div class="row">
+            <button id="power-reboot">🔄 Neustart</button>
+            <button id="power-shutdown">🔌 Herunterfahren</button>
+          </div>
+
+          <p>Information: Ein Neustart dauert ca. 30 Sekunden bis 1 Minute.
+          In der Regel wird die Internetverbindung innerhalb von 1 Minute
+          wieder aufgebaut, sofern keine anderen Geräte neu gestartet wurden.
+          Bei anschließenden Verbindungsproblemen kann es ratsam sein, die
+          betroffenen Geräte neu mit dem Netzwerk zu verbinden oder für
+          mehrere Stunden verbunden zu lassen. Achtung: Insbesondere
+          Smartphones trennen die WLAN-Verbindung oft erst nach mindestens 5
+          Sekunden Abschaltzeit. Daher die WLAN-Funktion für mindestens 5
+          Sekunden deaktivieren und erst dann wieder einschalten.</p>
+
+          <p>Nach erfolgreichem Herunterfahren muss das Stromkabel abgezogen
+          werden, um die Hardware tatsächlich auszuschalten. Erst beim
+          Wiederanschließen fährt das System wieder hoch.</p>
+        </fieldset>
+      </form>
+
+      <br />
+
+      <form id="password-form">
+        <fieldset>
+          <legend>Verwaltungspasswort</legend>
+
+          <label for="password-old" form="password-form">Altes Passwort:</label>
+          <div class="row">
+            <input id="password-old" type="password" />
+          </div>
+
+          <label for="password-new" form="password-form">Neues Passwort:</label>
+          <div class="row">
+            <input id="password-new" type="password" />
+          </div>
+
+          <label for="password-repeat" form="password-form">Neues Passwort wiederholen:</label>
+          <div class="row">
+            <input id="password-repeat" type="password" />
+          </div>
+
+          <br />
+
+          <div class="row">
+            <button id="password-show">🔒 Neues Passwort ein-/ausblenden</button>
+          </div>
+
+          <br />
+
+          <div class="row">
+            <button id="password-submit" type="submit">Passwort ändern</button>
+          </div>
+
+          <p id="password-status"></p>
+        </fieldset>
+      </form>
+    </div>
+  </body>
+</html>

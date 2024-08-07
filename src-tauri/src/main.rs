@@ -1089,6 +1089,142 @@ fn handle_delete_response(response: Response) -> String {
     }
 }
 
+#[tauri::command]
+async fn change_sys_password(
+    old: String,
+    to: String,
+    repeat: String,
+    state: State<'_, Mutex<Session>>,
+) -> Result<String, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(String::from(
+                "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            ))
+        }
+    };
+
+    if to != repeat {
+        return Ok(String::from(
+            "Das neue Passwort und seine Wiederholung stimmen nicht überein",
+        ));
+    }
+
+    let response = client
+        .post(instance.url.join("/data/write").unwrap())
+        .query(&[("path", "/data/admind.passwd")])
+        .basic_auth("rustkrazy", Some(&old))
+        .body(to)
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_change_sys_password_response(response),
+        Err(e) => format!("Änderung fehlgeschlagen: {}", e),
+    })
+}
+
+fn handle_change_sys_password_response(response: Response) -> String {
+    let status = response.status();
+    if status.is_success() {
+        String::from("Änderung erfolgreich")
+    } else if status == StatusCode::UNAUTHORIZED {
+        String::from("Das alte Passwort ist ungültig")
+    } else if status.is_client_error() {
+        format!("Clientseitiger Fehler: {}", status)
+    } else if status.is_server_error() {
+        format!("Serverseitiger Fehler: {}", status)
+    } else {
+        format!("Unerwarteter Statuscode: {}", status)
+    }
+}
+
+#[tauri::command]
+async fn reboot(state: State<'_, Mutex<Session>>) -> Result<String, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(String::from(
+                "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            ))
+        }
+    };
+
+    let response = client
+        .post(instance.url.join("/reboot").unwrap())
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_reboot_response(response),
+        Err(e) => format!("Befehl fehlgeschlagen: {}", e),
+    })
+}
+
+fn handle_reboot_response(response: Response) -> String {
+    let status = response.status();
+    if status.is_success() {
+        String::new()
+    } else if status == StatusCode::UNAUTHORIZED {
+        String::from("Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!")
+    } else if status.is_client_error() {
+        format!("Clientseitiger Fehler: {}", status)
+    } else if status.is_server_error() {
+        format!("Serverseitiger Fehler: {}", status)
+    } else {
+        format!("Unerwarteter Statuscode: {}", status)
+    }
+}
+
+#[tauri::command]
+async fn shutdown(state: State<'_, Mutex<Session>>) -> Result<String, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(String::from(
+                "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            ))
+        }
+    };
+
+    let response = client
+        .post(instance.url.join("/shutdown").unwrap())
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_shutdown_response(response),
+        Err(e) => format!("Befehl fehlgeschlagen: {}", e),
+    })
+}
+
+fn handle_shutdown_response(response: Response) -> String {
+    let status = response.status();
+    if status.is_success() {
+        String::new()
+    } else if status == StatusCode::UNAUTHORIZED {
+        String::from("Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!")
+    } else if status.is_client_error() {
+        format!("Clientseitiger Fehler: {}", status)
+    } else if status.is_server_error() {
+        format!("Serverseitiger Fehler: {}", status)
+    } else {
+        format!("Unerwarteter Statuscode: {}", status)
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(Mutex::new(Session {
@@ -1111,7 +1247,10 @@ fn main() {
             leases,
             load_domain,
             change_domain,
-            delete
+            delete,
+            change_sys_password,
+            reboot,
+            shutdown
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

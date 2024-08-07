@@ -214,7 +214,6 @@ window.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     showCredentials();
   });
-
   document.querySelector("#credentials-form").addEventListener("submit", (e) => {
     e.preventDefault();
     changeCredentials();
