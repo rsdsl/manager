@@ -52,6 +52,29 @@ async function loadNonDns() {
   logNetdumpdStderrEl.value = await logRead("rsdsl_netdumpd.err");
   logDyndnsStdoutEl.value = await logRead("dyndns.log");
   logDyndnsStderrEl.value = await logRead("dyndns.err");
+
+  logAdmindStdoutEl.scrollTop = logAdmindStdoutEl.scrollHeight;
+  logAdmindStderrEl.scrollTop = logAdmindStderrEl.scrollHeight;
+  logNetlinkdStdoutEl.scrollTop = logNetlinkdStdoutEl.scrollHeight;
+  logNetlinkdStderrEl.scrollTop = logNetlinkdStderrEl.scrollHeight;
+  logNetfilterdStdoutEl.scrollTop = logNetfilterdStdoutEl.scrollHeight;
+  logNetfilterdStderrEl.scrollTop = logNetfilterdStderrEl.scrollHeight;
+  logDhcp4dStdoutEl.scrollTop = logDhcp4dStdoutEl.scrollHeight;
+  logDhcp4dStderrEl.scrollTop = logDhcp4dStderrEl.scrollHeight;
+  logPppoe3StdoutEl.scrollTop = logPppoe3StdoutEl.scrollHeight;
+  logPppoe3StderrEl.scrollTop = logPppoe3StderrEl.scrollHeight;
+  logDhcp6StdoutEl.scrollTop = logDhcp6StdoutEl.scrollHeight;
+  logDhcp6StderrEl.scrollTop = logDhcp6StderrEl.scrollHeight;
+  logDsliteStdoutEl.scrollTop = logDsliteStdoutEl.scrollHeight;
+  logDsliteStderrEl.scrollTop = logDsliteStderrEl.scrollHeight;
+  logNtpStdoutEl.scrollTop = logNtpStdoutEl.scrollHeight;
+  logNtpStderrEl.scrollTop = logNtpStderrEl.scrollHeight;
+  logRadvdStdoutEl.scrollTop = logRadvdStdoutEl.scrollHeight;
+  logRadvdStderrEl.scrollTop = logRadvdStderrEl.scrollHeight;
+  logNetdumpdStdoutEl.scrollTop = logNetdumpdStdoutEl.scrollHeight;
+  logNetdumpdStderrEl.scrollTop = logNetdumpdStderrEl.scrollHeight;
+  logDyndnsStdoutEl.scrollTop = logDyndnsStdoutEl.scrollHeight;
+  logDyndnsStderrEl.scrollTop = logDyndnsStderrEl.scrollHeight;
 }
 
 window.addEventListener("DOMContentLoaded", async function() {
