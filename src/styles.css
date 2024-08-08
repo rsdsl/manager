@@ -106,6 +106,12 @@ textarea {
   resize: none;
 }
 
+table td {
+  border: 1px solid black;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;
