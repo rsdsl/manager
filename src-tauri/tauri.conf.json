@@ -15,11 +15,18 @@
         "all": false,
         "open": true
       },
-	  "dialog": {
-	  	"all": false,
-		"ask": true,
-		"message": true
-	  }
+      "dialog": {
+        "all": false,
+        "ask": true,
+        "message": true
+      },
+      "http": {
+        "scope": [
+          "https://*"
+        ],
+        "all": true,
+        "request": true
+      }
     },
     "windows": [
       {
