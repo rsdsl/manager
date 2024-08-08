@@ -2615,7 +2615,7 @@ dependencies = [
 
 [[package]]
 name = "rsdsl_manager"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "chrono",
  "hex",

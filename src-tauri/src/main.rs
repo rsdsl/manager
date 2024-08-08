@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 
@@ -1279,6 +1279,10 @@ fn main() {
         .manage(Mutex::new(Session {
             client: Client::builder()
                 .danger_accept_invalid_certs(true)
+                .resolve(
+                    "rsdsl",
+                    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 128, 10, 254)), 8443),
+                )
                 .build()
                 .expect("error creating http client"),
             instance: None,
