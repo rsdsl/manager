@@ -30,8 +30,8 @@
     },
     "windows": [
       {
-        "title": "rsdsl_manager",
-        "width": 800,
+        "title": "RSDSL Verwaltungswerkzeug",
+        "width": 1200,
         "height": 600
       }
     ],
