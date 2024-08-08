@@ -1,8 +1,8 @@
 [package]
 name = "rsdsl_manager"
 version = "0.0.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "RSDSL Verwaltungswerkzeug"
+authors = ["Himbeer"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -11,7 +11,7 @@ edition = "2021"
 tauri-build = { version = "1", features = [] }
 
 [dependencies]
-tauri = { version = "1", features = [ "dialog-message", "dialog-ask", "shell-open", "dialog"] }
+tauri = { version = "1", features = [ "http-all", "dialog-message", "dialog-ask", "shell-open", "dialog"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.12.5", features = ["json"] }
