@@ -7,8 +7,8 @@
   line-height: 24px;
   font-weight: 400;
 
-  color: #0f0f0f;
-  background-color: #f6f6f6;
+  color: #f0f0f0;
+  background-image: linear-gradient(to right, #2f2dff, #da1bde);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -44,12 +44,12 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #4ff3f9;
   text-decoration: inherit;
 }
 
 a:hover {
-  color: #535bf2;
+  color: #46c9ce;
 }
 
 h1 {
@@ -77,11 +77,10 @@ button {
 }
 
 button:hover:enabled {
-  border-color: #396cd8;
+  background-color: #d0d0d0;
 }
 button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
+  background-color: #b0b0b0;
 }
 
 :disabled {
@@ -90,7 +89,9 @@ button:active {
 }
 
 input,
+textarea,
 button {
+  background-color: #f0f0f0;
   outline: none;
 }
 
@@ -107,27 +108,11 @@ textarea {
 }
 
 table td {
-  border: 1px solid black;
+  border: 1px solid #f0f0f0;
   padding-left: 0.5em;
   padding-right: 0.5em;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
-
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
+fieldset {
+  border: 1px solid #f0f0f0;
 }
