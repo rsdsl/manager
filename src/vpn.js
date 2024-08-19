@@ -62,8 +62,18 @@ async function loadClients() {
     let pubkey = document.createElement("td");
     pubkey.innerText = client.pubkey;
 
+    let pskSpan = document.createElement("span");
+    pskSpan.className = "hoverunhide";
+    pskSpan.innerText = client.psk;
+
+    let pskPlaceholder = document.createElement("span");
+    pskPlaceholder.className = "hoverhide";
+    pskPlaceholder.innerText = "(versteckt)";
+
     let psk = document.createElement("td");
-    psk.innerText = client.psk;
+    psk.className = "hider";
+    psk.appendChild(pskSpan);
+    psk.appendChild(pskPlaceholder);
 
     let allowedIps = document.createElement("td");
     allowedIps.innerText = client.allowed_ips;

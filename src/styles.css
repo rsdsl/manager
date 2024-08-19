@@ -116,3 +116,19 @@ table td {
 fieldset {
   border: 1px solid #f0f0f0;
 }
+
+.hider .hoverunhide {
+  display: none;
+}
+
+.hider .hoverhide {
+  display: default;
+}
+
+.hider:hover .hoverunhide {
+  display: block;
+}
+
+.hider:hover .hoverhide {
+  display: none;
+}
