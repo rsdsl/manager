@@ -26,6 +26,10 @@
           <button id="lan-open-submit" type="submit">LAN</button>
         </form>
 
+        <form id="vpn-open-form">
+          <button id="vpn-open-submit" type="submit">VPN</button>
+        </form>
+
         <form id="log-open-form">
           <button id="log-open-submit" type="submit">Diagnoseprotokolle</button>
         </form>
@@ -140,6 +144,31 @@
               anderen Geräte nicht zu gefährden. Es kann aber auch von
               gewöhnlichen Rechnern genutzt werden, wenn die Freigabe einer
               Software für das öffentliche Internet nötig ist.</td>
+            </tr>
+
+            <tr>
+              <td>VPN (Trusted)</td>
+              <td>-</td>
+              <td>Kein VLAN</td>
+              <td>50</td>
+              <td>6</td>
+              <td>VPN-Netz für Zugriff auf interne Dienste (z.B. Telefonanlage
+              oder Routerverwaltung). Keine Kommunikation zu anderen
+              Gerätenetzen möglich, aber voller Verwaltungs- und
+              Internetzugriff. IPv6 wird über ULA mit NPT bereitgestellt.
+              Zugriff aus dem Internet ist nicht erlaubt.</td>
+            </tr>
+
+            <tr>
+              <td>VPN (Exposed)</td>
+              <td>-</td>
+              <td>Kein VLAN</td>
+              <td>60</td>
+              <td>7</td>
+              <td>VPN-Netz für Freigaben ins Internet. Keine Kommunikation zu
+              anderen Gerätenetzen möglich, aber voller Internetzugriff. IPv6
+              wird über ULA mit NPT bereitgestellt.  Zugriff aus dem Internet
+              ist erlaubt.</td>
             </tr>
           </table>
 
@@ -303,6 +332,7 @@
 
           <span class="row" id="slaac-flags">Flags: On-Link, Autonomous (A)</span>
           <span class="row" id="slaac-ralft">Standardgateway-Gültigkeitsdauer: 1800 Sekunden</span>
+          <span class="row" id="slaac-ula">Privates Präfix (ULA): fd0b:9272:534e::/48</span>
           <span class="row" id="slaac-preflft">Präfix-Verwendungsdauer: 1500 Sekunden</span>
           <span class="row" id="slaac-validlft">Präfix-Gültigkeitsdauer: 1800 Sekunden</span>
           <span class="row" id="slaac-dnslft">DNS-Server-Gültigkeitsdauer: 1800 Sekunden</span>
@@ -311,11 +341,12 @@
           Heimnetz wird nicht unterstützt. Das bedeutet, dass der Router auf
           jedem Netzwerk periodisch sowie auf Anfrage beitretender Geräte das
           jeweilige öffentliche Präfix und weitere Parameter verbreitet (ULA
-          bzw. eindeutige lokale IPv6-Adressen werden nicht unterstützt). Die
-          Geräte wählen die zweite Adresshälfte selbst und stellen sicher, dass
-          diese nicht mit existierenden Adressen anderer Rechner kollidieren.
-          Daher ist dem Router nicht bekannt, welche Adressen existieren,
-          weshalb sie hier nicht aufgelistet werden können. Scans mit anderen
+          bzw. eindeutige lokale IPv6-Adressen werden ebenfalls unterstützt und
+          automatisch konfiguriert). Die Geräte wählen die zweite Adresshälfte
+          selbst und stellen sicher, dass diese nicht mit existierenden
+          Adressen anderer Rechner kollidieren.  Daher ist dem Router nicht
+          bekannt, welche Adressen existieren, weshalb sie hier nicht
+          aufgelistet werden können. Scans mit anderen
           Netzwerk-Dienstprogrammen zusammen mit den Diagnoseprotokollen können
           dieses Problem lösen. Die beste Methode wäre ein DHCPv6-Server, der
           aber aufgrund des höheren Aufwands und der fehlenden Kompatibilität

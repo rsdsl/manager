@@ -12,6 +12,10 @@ function lanOpen() {
   window.location = "lan.html";
 }
 
+function vpnOpen() {
+  window.location = "vpn.html";
+}
+
 function logOpen() {
   window.location = "log.html";
 }
@@ -38,6 +42,10 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#lan-open-form").addEventListener("submit", (e) => {
     e.preventDefault();
     lanOpen();
+  });
+  document.querySelector("#vpn-open-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    vpnOpen();
   });
   document.querySelector("#log-open-form").addEventListener("submit", (e) => {
     e.preventDefault();
