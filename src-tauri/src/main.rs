@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::io::{BufRead, BufReader};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
@@ -295,6 +296,20 @@ struct Leases {
 #[derive(Debug, Serialize)]
 struct Domain {
     domain: String,
+    status_text: String,
+}
+
+#[derive(Debug, Serialize)]
+struct VpnClient {
+    name: String,
+    pubkey: String,
+    psk: String,
+    allowed_ips: String,
+}
+
+#[derive(Debug, Serialize)]
+struct VpnClients {
+    clients: Vec<VpnClient>,
     status_text: String,
 }
 
@@ -1274,6 +1289,325 @@ async fn handle_log_read_response(response: Response) -> String {
     }
 }
 
+#[tauri::command]
+async fn vpnclients(state: State<'_, Mutex<Session>>) -> Result<VpnClients, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(VpnClients {
+                clients: Vec::new(),
+                status_text: String::from(
+                    "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+                ),
+            })
+        }
+    };
+
+    let response = client
+        .get(instance.url.join("/data/read").unwrap())
+        .query(&[("path", "/data/wgd.peers")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_vpnclients_response(response).await,
+        Err(e) => VpnClients {
+            clients: Vec::new(),
+            status_text: format!("Abfrage fehlgeschlagen: {}", e),
+        },
+    })
+}
+
+async fn handle_vpnclients_response(response: Response) -> VpnClients {
+    let status = response.status();
+    if status.is_success() {
+        match response.text().await {
+            Ok(peertext) => parse_peertext(peertext),
+            Err(e) => VpnClients {
+                clients: Vec::new(),
+                status_text: format!("Keinen Text vom Server erhalten. Fehler: {}", e),
+            },
+        }
+    } else if status == StatusCode::UNAUTHORIZED {
+        VpnClients {
+            clients: Vec::new(),
+            status_text: String::from(
+                "Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!",
+            ),
+        }
+    } else if status == StatusCode::NOT_FOUND {
+        VpnClients {
+            clients: Vec::new(),
+            status_text: String::new(),
+        }
+    } else if status.is_client_error() {
+        VpnClients {
+            clients: Vec::new(),
+            status_text: format!("Clientseitiger Fehler: {}", status),
+        }
+    } else if status.is_server_error() {
+        VpnClients {
+            clients: Vec::new(),
+            status_text: format!("Serverseitiger Fehler: {}", status),
+        }
+    } else {
+        VpnClients {
+            clients: Vec::new(),
+            status_text: format!("Unerwarteter Statuscode: {}", status),
+        }
+    }
+}
+
+macro_rules! next {
+    ($c:expr, $v:ident) => {
+        match $c.next() {
+            Some(column) => column,
+            None => return VpnClients {
+                clients: $v.clients,
+                status_text: format!("Ungültige Clientdefinition: Fehlende Spalte. Konfigurationsdatei löschen und neu anlegen.")
+            },
+        }
+    };
+
+    ($c:expr, $v:ident, $name:expr) => {
+        match $c.next() {
+            Some(column) => column,
+            None => {
+                $v.clients.push(VpnClient {
+                    name: $name,
+                    pubkey: String::from("--- FEHLER ---"),
+                    psk: String::from("--- FEHLER ---"),
+                    allowed_ips: String::from("--- FEHLER ---"),
+                });
+
+                return VpnClients {
+                    clients: $v.clients,
+                    status_text: format!("Ungültige Clientdefinition: Fehlende Spalte. Fehlerhaften Eintrag (letzte angezeigte Zeile) löschen und nach Korrektur neu anlegen.")
+                };
+            }
+        }
+    }
+}
+
+fn parse_peertext(peertext: String) -> VpnClients {
+    let mut vpnclients = VpnClients {
+        clients: Vec::new(),
+        status_text: String::new(),
+    };
+
+    let br = BufReader::new(peertext.as_bytes());
+    for line in br.lines() {
+        let line = line.expect("read line from peertext string");
+
+        let mut columns = line.split_whitespace();
+
+        let name = next!(columns, vpnclients);
+        let pubkey = next!(columns, vpnclients, name.to_string());
+        let psk = next!(columns, vpnclients, name.to_string());
+
+        let mut allowed_ips = String::new();
+        let mut delim = "";
+        for column in columns {
+            allowed_ips += delim;
+            allowed_ips += column;
+            delim = " ";
+        }
+
+        vpnclients.clients.push(VpnClient {
+            name: name.to_string(),
+            pubkey: pubkey.to_string(),
+            psk: psk.to_string(),
+            allowed_ips,
+        });
+    }
+
+    vpnclients
+}
+
+#[tauri::command]
+async fn vpndel(name: String, state: State<'_, Mutex<Session>>) -> Result<String, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(String::from(
+                "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            ))
+        }
+    };
+
+    let response = client
+        .get(instance.url.join("/data/read").unwrap())
+        .query(&[("path", "/data/wgd.peers")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    let peertext = match response.await {
+        Ok(response) => match handle_vpndel_response(response).await {
+            Ok(peertext) => peertext,
+            Err(status_text) => return Ok(status_text),
+        },
+        Err(e) => format!("Abfrage fehlgeschlagen: {}", e),
+    };
+
+    let mut new_peertext = String::new();
+
+    let br = BufReader::new(peertext.as_bytes());
+    for line in br.lines() {
+        let line = line.expect("read line from peertext string");
+
+        if !line.starts_with(&name) {
+            new_peertext += &line;
+            new_peertext += "\n";
+        }
+    }
+
+    let response = client
+        .post(instance.url.join("/data/write").unwrap())
+        .query(&[("path", "/data/wgd.peers")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .body(new_peertext)
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_vpndel_response2(response),
+        Err(e) => format!("Löschung fehlgeschlagen: {}", e),
+    })
+}
+
+async fn handle_vpndel_response(response: Response) -> Result<String, String> {
+    let status = response.status();
+    if status.is_success() {
+        match response.text().await {
+            Ok(peertext) => Ok(peertext),
+            Err(e) => Err(format!("Keinen Text vom Server erhalten. Fehler: {}", e)),
+        }
+    } else if status == StatusCode::NOT_FOUND {
+        Err(String::from(
+            "Konfigurationsdatei existiert nicht, Löschung nicht nötig",
+        ))
+    } else if status == StatusCode::UNAUTHORIZED {
+        Err(String::from(
+            "Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!",
+        ))
+    } else if status.is_client_error() {
+        Err(format!("Clientseitiger Fehler: {}", status))
+    } else if status.is_server_error() {
+        Err(format!("Serverseitiger Fehler: {}", status))
+    } else {
+        Err(format!("Unerwarteter Statuscode: {}", status))
+    }
+}
+
+fn handle_vpndel_response2(response: Response) -> String {
+    let status = response.status();
+    if status.is_success() {
+        String::from("Löschung erfolgreich")
+    } else if status == StatusCode::UNAUTHORIZED {
+        String::from("Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!")
+    } else if status.is_client_error() {
+        format!("Clientseitiger Fehler: {}", status)
+    } else if status.is_server_error() {
+        format!("Serverseitiger Fehler: {}", status)
+    } else {
+        format!("Unerwarteter Statuscode: {}", status)
+    }
+}
+
+#[tauri::command]
+async fn vpnadd(
+    name: String,
+    pubkey: String,
+    psk: String,
+    allowed_ips: String,
+    state: State<'_, Mutex<Session>>,
+) -> Result<String, ()> {
+    let (client, instance) = {
+        let state = state.lock().unwrap();
+        (state.client.clone(), state.instance.clone())
+    };
+    let instance = match instance {
+        Some(instance) => instance,
+        None => {
+            return Ok(String::from(
+                "Keine Instanz ausgewählt, bitte melden Sie sich neu an!",
+            ))
+        }
+    };
+
+    let response = client
+        .get(instance.url.join("/data/read").unwrap())
+        .query(&[("path", "/data/wgd.peers")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .send();
+
+    let mut peertext = match response.await {
+        Ok(response) => match handle_vpnadd_response(response).await {
+            Ok(peertext) => peertext,
+            Err(status_text) => return Ok(status_text),
+        },
+        Err(e) => format!("Abfrage fehlgeschlagen: {}", e),
+    };
+
+    peertext += &format!("{} {} {} {}\n", name, pubkey, psk, allowed_ips);
+
+    let response = client
+        .post(instance.url.join("/data/write").unwrap())
+        .query(&[("path", "/data/wgd.peers")])
+        .basic_auth("rustkrazy", Some(&instance.password))
+        .body(peertext)
+        .send();
+
+    Ok(match response.await {
+        Ok(response) => handle_vpnadd_response2(response),
+        Err(e) => format!("Hinzufügen fehlgeschlagen: {}", e),
+    })
+}
+
+async fn handle_vpnadd_response(response: Response) -> Result<String, String> {
+    let status = response.status();
+    if status.is_success() {
+        match response.text().await {
+            Ok(peertext) => Ok(peertext),
+            Err(e) => Err(format!("Keinen Text vom Server erhalten. Fehler: {}", e)),
+        }
+    } else if status == StatusCode::NOT_FOUND {
+        Ok(String::new())
+    } else if status == StatusCode::UNAUTHORIZED {
+        Err(String::from(
+            "Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!",
+        ))
+    } else if status.is_client_error() {
+        Err(format!("Clientseitiger Fehler: {}", status))
+    } else if status.is_server_error() {
+        Err(format!("Serverseitiger Fehler: {}", status))
+    } else {
+        Err(format!("Unerwarteter Statuscode: {}", status))
+    }
+}
+
+fn handle_vpnadd_response2(response: Response) -> String {
+    let status = response.status();
+    if status.is_success() {
+        String::from("Hinzufügen erfolgreich")
+    } else if status == StatusCode::UNAUTHORIZED {
+        String::from("Ungültiges Verwaltungspasswort, bitte melden Sie sich neu an!")
+    } else if status.is_client_error() {
+        format!("Clientseitiger Fehler: {}", status)
+    } else if status.is_server_error() {
+        format!("Serverseitiger Fehler: {}", status)
+    } else {
+        format!("Unerwarteter Statuscode: {}", status)
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(Mutex::new(Session {
@@ -1304,7 +1638,10 @@ fn main() {
             change_sys_password,
             reboot,
             shutdown,
-            log_read
+            log_read,
+            vpnclients,
+            vpndel,
+            vpnadd
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

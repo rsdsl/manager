@@ -42,6 +42,165 @@
           <button id="disconnect-submit" type="submit">🚪 Abmelden</button>
         </form>
       </div>
+
+      <br />
+
+      <form id="profile-form">
+        <fieldset>
+          <legend>Clientseitige Konfiguration</legend>
+
+          <p>
+            1. WireGuard installieren: <a
+            href="https://www.wireguard.com/install/"
+            target="_blank">https://www.wireguard.com/install/</a>
+
+            <br />
+
+            2. Tunnel hinzufügen / Add a tunnel / +
+
+            <br />
+
+            3. Gerätenummer ermitteln: Beliebige Zahl zwischen 100 und 239 wählen, die nicht bereits für ein anderes Gerät verwendet wird
+
+            <br />
+
+            4. Daten selbst eingeben / Create from scratch
+
+            <br />
+
+            5. "Generate keypair" drücken und privaten Schlüssel / Private key in die Zwischenablage kopieren
+
+            <br />
+
+            6. Gerätedaten eintragen
+
+            <br /><br />
+
+            - Name: wg0 (beliebig wählbar)<br />
+            - Privater Schlüssel / Private key: Mit weiterer Betätigung von "Generate keypair" automatisch erzeugen lassen<br />
+            - Öffentlicher Schlüssel / Public key: Wird ebenfalls von "Generate keypair" erzeugt<br />
+            - Adressen / Addresses: 10.128.50.GERÄTENUMMER/32, fd0b:9272:534e:6::GERÄTENUMMER/128 (Achtung: Für Firewallausnahme stattdessen 10.128.60.GERÄTENUMMER/32, fd0b:9272:534e:7::GERÄTENUMMER/128 verwenden)<br />
+            - Listen port: Keine Angabe (automatisch)<br />
+            - MTU: Keine Angabe (automatisch)<br />
+            - DNS-Server / DNS servers: 10.128.50.254, fd0b:9272:534e:6::1 (Achtung: Für Firewallausnahme stattdessen 10.128.60.254, fd0b:9272:534e:7::1 verwenden)<br />
+
+            <br />
+
+            7. Gerät hinzufügen / Add peer
+
+            <br /><br />
+
+            - Öffentlicher Schlüssel / Public key: <span id="profile-pubkey">Siehe Diagnoseprotokoll</span><br />
+            - Symmetrischer Schlüssel / Preshared key: Aus Zwischenablage einfügen<br />
+            - Endpunkt / Endpoint: rtr.himbeerserver.de:51820 (Achtung: Für Firewallausnahme stattdessen rtr.himbeerserver.de:51821 verwenden)<br />
+            - Erlaubte IP-Adressen / Allowed IPs: 0.0.0.0/0, ::/0<br />
+            - Private IP-Adressen ignorieren / Exclude private IPs: Nein (bei Zugriff aus dem öffentlichen Internet egal, bei Zugriff aus dem Heimnetz relevant)<br />
+            - Keep-Alive / Persistent keepalive: Keine Angabe (deaktiviert), kann ggf. auf 25 gesetzt werden<br />
+
+            <br />
+
+            8. Speichern
+          </p>
+        </fieldset>
+      </form>
+
+      <form id="server-form">
+        <fieldset>
+          <legend>Server</legend>
+
+          <div class="row">
+            <label for="server-pubkey">Öffentlicher Schlüssel / Public key:</label>
+            <span id="server-pubkey">Siehe Diagnoseprotokoll</span>
+          </div>
+
+          <br />
+
+          <div class="row">
+            <button id="server-restart">🔄 VPN-Server-Neustart</button>
+          </div>
+
+          <p>Information: Ein Neustart des VPN-Servers dauert ca. 30 Sekunden.
+          Eventuell gehen dabei bestehende VPN-Verbindungen verloren. Bei
+          Fehlkonfiguration ist mit großer Wahrscheinlichkeit kein
+          VPN-Verbindungsaufbau mehr möglich.</p> 
+        </fieldset>
+      </form>
+
+      <br />
+
+      <form id="client-form">
+        <fieldset>
+          <legend>Clients</legend>
+
+          <table id="client-clients">
+            <th>
+              <td>Öffentlicher Schlüssel / Public key</td>
+              <td>Symmetrischer Schlüssel / Preshared key</td>
+              <td>Erlaubte IP-Adressen / Allowed IPs</td>
+            </th>
+          </table>
+
+          <div class="row">
+            <output id="client-status">Warte auf Initialisierung...</output>
+          </div>
+
+          <p>Information: Es ist zulässig (aber nicht sinnvoll), mehrere
+          Clients mit dem gleichen Namen zu erstellen. Beim Löschen werden alle
+          Clients mit passendem Namen entfernt, unabhängig davon, welcher
+          Client tatsächlich gelöscht werden sollte.</p>
+        </fieldset>
+      </form>
+
+      <br />
+
+      <form id="add-form">
+        <fieldset>
+          <legend>Client hinzufügen</legend>
+
+          <label for="add-name" form="add-form">Name:</label>
+          <div class="row">
+            <input id="add-name" />
+          </div>
+
+          <br />
+
+          <label for="add-pubkey" form="add-form">Öffentlicher Schlüssel / Public key:</label>
+          <div class="row">
+            <input id="add-pubkey" />
+          </div>
+
+          <br />
+
+          <label for="add-psk" form="add-form">Symmetrischer Schlüssel / Preshared key:</label>
+          <div class="row">
+            <input id="add-psk" type="password" />
+          </div>
+          <br />
+          <div class="row">
+            <button id="add-show">🔒 Symmetrischen Schlüssel ein-/ausblenden</button>
+          </div>
+
+          <br />
+
+          <label for="add-allowedips" form="add-form">Erlaubte IP-Adressen / Allowed IPs:</label>
+          <div class="row">
+            <input id="add-allowedips" placeholder="z.B. 10.128.50.100/32 fd0b:9272:534e:6::100/128" />
+          </div>
+
+          <br />
+
+          <div class="row">
+            <button id="add-submit" type="submit">Client hinzufügen</button>
+          </div>
+
+          <p id="add-status"></p>
+
+          <p>Information: Es ist zulässig (aber nicht sinnvoll), mehrere
+          Clients mit dem gleichen Namen zu erstellen. Beim Löschen wird der
+          erste Client mit passendem Namen entfernt, unabhängig davon, welcher
+          Client tatsächlich gelöscht werden sollte.</p>
+        </fieldset>
+      </form>
     </div>
   </body>
 </html>
