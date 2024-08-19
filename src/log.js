@@ -24,6 +24,8 @@ let logNetdumpdStdoutEl;
 let logNetdumpdStderrEl;
 let logDyndnsStdoutEl;
 let logDyndnsStderrEl;
+let logWgdStdoutEl;
+let logWgdStderrEl;
 
 async function logRead(logfile) {
   return await invoke("log_read", { logfile: logfile });
@@ -52,6 +54,8 @@ async function loadNonDns() {
   logNetdumpdStderrEl.value = await logRead("rsdsl_netdumpd.err");
   logDyndnsStdoutEl.value = await logRead("dyndns.log");
   logDyndnsStderrEl.value = await logRead("dyndns.err");
+  logWgdStdoutEl.value = await logRead("rsdsl_wgd.log");
+  logWgdStderrEl.value = await logRead("rsdsl_wgd.err");
 
   logAdmindStdoutEl.scrollTop = logAdmindStdoutEl.scrollHeight;
   logAdmindStderrEl.scrollTop = logAdmindStderrEl.scrollHeight;
@@ -75,6 +79,8 @@ async function loadNonDns() {
   logNetdumpdStderrEl.scrollTop = logNetdumpdStderrEl.scrollHeight;
   logDyndnsStdoutEl.scrollTop = logDyndnsStdoutEl.scrollHeight;
   logDyndnsStderrEl.scrollTop = logDyndnsStderrEl.scrollHeight;
+  logWgdStdoutEl.scrollTop = logWgdStdoutEl.scrollHeight;
+  logWgdStderrEl.scrollTop = logWgdStderrEl.scrollHeight;
 }
 
 window.addEventListener("DOMContentLoaded", async function() {
@@ -102,6 +108,8 @@ window.addEventListener("DOMContentLoaded", async function() {
   logNetdumpdStderrEl = document.querySelector("#log-netdumpd-stderr");
   logDyndnsStdoutEl = document.querySelector("#log-dyndns-stdout");
   logDyndnsStderrEl = document.querySelector("#log-dyndns-stderr");
+  logWgdStdoutEl = document.querySelector("#log-wgd-stdout");
+  logWgdStderrEl = document.querySelector("#log-wgd-stderr");
 
   loadNonDns();
   // logDnsdStdoutEl.value = await logRead("rsdsl_dnsd.log");
