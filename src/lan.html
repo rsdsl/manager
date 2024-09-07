@@ -225,12 +225,21 @@
             <legend>Wichtige, statisch konfigurierte Netzwerkgeräte (nicht per DHCP verwaltet)</legend>
 
             <span class="row">192.168.1.1/24: DSL-Modem</span>
+            <span class="row">192.168.100.1/24: Standardmodem (z.B. ONT)</span>
             <span class="row">10.128.0.248/24: Switch</span>
             <span class="row">10.128.0.249/24: Access Point im Dachgeschoss</span>
             <span class="row">10.128.0.250/24: Access Point im Obergeschoss</span>
             <span class="row">10.128.0.251/24: Access Point im Erdgeschoss</span>
             <span class="row">10.128.0.253/24 und 10.128.40.253/24: Hauptserver</span>
             <span class="row">10.128.40.252/24: Telefonadapter</span>
+
+            <p>Information: Das verwendete DSL-Modem nutzt 192.168.1.1/24 als
+            seine IP-Adresse für die Verwaltung. Dies weicht von der
+            Standardadresse 192.168.100.1/24 ab, die von den meisten anderen
+            Modems verwendet wird. Daher sind oben beide Adressen aufgeführt.
+            Die Standardadresse 192.168.100.1/24 ist höchstwahrscheinlich
+            diejenige, die der Glasfaser-ONT verwendet, sofern dieser überhaupt
+            über eine Verwaltungsschnittstelle verfügt.</p>
           </fieldset>
 
           <fieldset>
